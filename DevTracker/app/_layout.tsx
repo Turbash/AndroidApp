@@ -21,6 +21,8 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="goal-details" options={{ title: "Goal Details" }} />
+        <Stack.Screen name="add-progress" options={{ title: "Add Progress" }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
