@@ -1,50 +1,55 @@
-# Welcome to your Expo app 👋
+# DevTracker – Your Personal Learning Progress Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+DevTracker is a simple, offline-first mobile app for tech students to track their learning goals and progress. Built with React Native and Expo, it helps you organize what you're learning, log progress, and stay motivated.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Add Learning Goals:** Example: “Finish React course”
+- **Update Progress:** Add notes like “Completed Lesson 5”
+- **Mark as Done:** Mark goals as completed and reflect back later
+- **Stats:** See total goals, % complete, and more
 
+## Screens
+
+- **Home:** List all your goals
+- **Add Goal:** Create a new goal (title, description, category)
+- **Goal Details:** View goal info and progress updates
+- **Add Progress:** Log what you did today
+- **Stats:** See your learning stats
+
+## Data Storage
+
+- All data is stored locally on your device using [AsyncStorage](https://react-native-async-storage.github.io/async-storage/).
+- No backend or authentication required.
+
+## Getting Started
+
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. **Start the app**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. **Open on your device**
+   - Use Expo Go app, Android emulator, or iOS simulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- `app/` – All screens and navigation
+- `components/` – Reusable UI components
+- `utils/storage.ts` – AsyncStorage helpers for saving/loading data
 
-## Get a fresh project
+## Why DevTracker?
 
-When you're ready, run:
+Tech students often lose track of their learning progress. DevTracker keeps everything organized, focused, and easy to review—without the complexity of most productivity apps.
 
-```bash
-npm run reset-project
-```
+## License
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+MIT
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+> This folder is part of a larger repository. For root-level instructions, see the main `README.md`.

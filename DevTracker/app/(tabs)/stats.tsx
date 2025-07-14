@@ -1,15 +1,28 @@
-import { useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { ThemedText } from '../../components/ThemedText';
+import { ThemedView } from '../../components/ThemedView';
+import { getGoals, Goal } from '../../utils/storage';
 
 export default function StatsScreen() {
-  const router = useRouter();
+  const [stats, setStats] = useState({ total: 0, completed: 0, percent: 0 });
+
+  useEffect(() => {
+    getGoals().then((goals: Goal[]) => {
+      const total = goals.length;
+      const completed = goals.filter(g => g.completed).length;
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+      setStats({ total, completed, percent });
+    });
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Stats</Text>
-      {/* Stats content will go here */}
-    </View>
+    <ThemedView style={styles.container}>
+      <ThemedText type="title">Stats</ThemedText>
+      <ThemedText style={styles.stat}>Total Goals: {stats.total}</ThemedText>
+      <ThemedText style={styles.stat}>Completed Goals: {stats.completed}</ThemedText>
+      <ThemedText style={styles.stat}>Completion: {stats.percent}%</ThemedText>
+    </ThemedView>
   );
 }
 
@@ -17,11 +30,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  stat: {
+    fontSize: 18,
+    marginBottom: 12,
   },
 });
