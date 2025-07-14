@@ -1,64 +1,61 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
+import { Button, StyleSheet } from 'react-native';
+import { GitHubDashboard } from '../../components/GitHubDashboard';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
-import { useThemeColor } from '../../hooks/useThemeColor';
-import { getGoals, Goal } from '../../utils/storage';
+import { getGitHubUsername } from '../../utils/storage';
 
-export default function HomeScreen() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
+export default function DashboardScreen() {
+  const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const goalItemBg = useThemeColor({ light: '#f3f3f3', dark: '#333' }, 'background');
 
-  // Fetch goals when screen is focused
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
-      const loadGoals = async () => {
-        setRefreshing(true);
-        const data = await getGoals();
-        if (isActive) setGoals(data);
-        setRefreshing(false);
+      const loadData = async () => {
+        const username = await getGitHubUsername();
+        if (isActive) {
+          setGithubUsername(username);
+          setLoading(false);
+        }
       };
-      loadGoals();
+      loadData();
       return () => {
         isActive = false;
       };
     }, [])
   );
 
-  const renderGoal = ({ item }: { item: Goal }) => (
-    <TouchableOpacity
-      style={[styles.goalItem, { backgroundColor: goalItemBg }]}
-      onPress={() => router.push({ pathname: '/goal-details', params: { id: item.id } })}
-    >
-      <ThemedText style={styles.goalTitle}>{item.title}</ThemedText>
-      <ThemedText style={styles.goalCategory}>{item.category}</ThemedText>
-      <ThemedText style={styles.goalStatus}>{item.completed ? '✅ Done' : '⏳ In Progress'}</ThemedText>
-    </TouchableOpacity>
-  );
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText>Loading...</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Your Learning Goals</ThemedText>
-      <FlatList
-        data={goals}
-        keyExtractor={item => item.id}
-        renderItem={renderGoal}
-        ListEmptyComponent={<ThemedText>No goals yet. Add one!</ThemedText>}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => {
-            setRefreshing(true);
-            getGoals().then(data => {
-              setGoals(data);
-              setRefreshing(false);
-            });
-          }} />
-        }
-      />
+      <ThemedText type="title">Developer Dashboard</ThemedText>
+      {githubUsername ? (
+        <GitHubDashboard username={githubUsername} />
+      ) : (
+        <ThemedView style={styles.connectContainer}>
+          <ThemedText style={styles.subtitle}>
+            Track your real development progress with GitHub integration
+          </ThemedText>
+          <ThemedText style={styles.description}>
+            Connect your GitHub account to automatically track your repositories, commits, and coding activity.
+          </ThemedText>
+          <Button 
+            title="Connect GitHub Account" 
+            onPress={() => router.push('/github-connect')}
+          />
+        </ThemedView>
+      )}
     </ThemedView>
   );
 }
@@ -68,21 +65,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
   },
-  goalItem: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  goalTitle: {
+  subtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    marginVertical: 16,
+    textAlign: 'center',
   },
-  goalCategory: {
-    fontSize: 14,
-    color: '#666',
+  description: {
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
   },
-  goalStatus: {
-    marginTop: 4,
-    fontSize: 14,
+  connectContainer: {
+    marginTop: 40,
+    alignItems: 'center',
   },
 });
