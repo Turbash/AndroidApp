@@ -4,8 +4,7 @@ const GITHUB_USERNAME_KEY = 'DEVTRACKER_GITHUB_USERNAME';
 const GITHUB_CACHE_KEY = 'DEVTRACKER_GITHUB_CACHE';
 const REPO_CACHE_KEY = 'DEVTRACKER_REPO_CACHE';
 const CACHE_DURATION = 1000 * 60 * 30; 
-const REPO_CACHE_DURATION = 1000 * 60 * 15; // 15 minutes
-
+const REPO_CACHE_DURATION = 1000 * 60 * 30; 
 interface GitHubCache {
   username: string;
   repos: any[];

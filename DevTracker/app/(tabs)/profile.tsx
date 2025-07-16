@@ -21,11 +21,28 @@ export default function ProfileScreen() {
   const loadProfileData = async () => {
     try {
       const username = await getGitHubUsername();
+      console.log('👤 Loading profile for username:', username);
+      
       if (username) {
         setGithubUsername(username);
-        const cached = await getCachedGitHubData(username);
-        if (cached) {
-          setUserProfile(cached.userProfile);
+        
+        try {
+          const { fetchUserProfile } = await import('../../services/github');
+          const userProfile = await fetchUserProfile(username);
+          console.log('✅ Profile loaded:', {
+            name: userProfile.name,
+            login: userProfile.login,
+            avatar: userProfile.avatar_url
+          });
+          setUserProfile(userProfile);
+        } catch (error) {
+          console.error('❌ Failed to fetch fresh profile:', error);
+          
+          const cached = await getCachedGitHubData(username);
+          if (cached && cached.userProfile) {
+            console.log('📦 Using cached profile data');
+            setUserProfile(cached.userProfile);
+          }
         }
       }
     } catch (error) {
@@ -63,7 +80,12 @@ export default function ProfileScreen() {
       <ThemedView style={styles.container}>
         <ThemedText type="title">Developer Profile</ThemedText>
         
-        {userProfile && (
+        {/* Debug info */}
+        <ThemedText style={styles.debugText}>
+          Username: {githubUsername || 'None'} | Profile: {userProfile ? 'Loaded' : 'Missing'}
+        </ThemedText>
+        
+        {userProfile ? (
           <ThemedView style={[styles.profileCard, { backgroundColor: cardBg }]}>
             <Image source={{ uri: userProfile.avatar_url }} style={styles.avatar} />
             <ThemedText type="subtitle" style={styles.name}>
@@ -77,15 +99,15 @@ export default function ProfileScreen() {
             
             <ThemedView style={styles.statsContainer}>
               <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.public_repos}</ThemedText>
+                <ThemedText type="defaultSemiBold">{userProfile.public_repos || 0}</ThemedText>
                 <ThemedText>Repositories</ThemedText>
               </ThemedView>
               <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.followers}</ThemedText>
+                <ThemedText type="defaultSemiBold">{userProfile.followers || 0}</ThemedText>
                 <ThemedText>Followers</ThemedText>
               </ThemedView>
               <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.following}</ThemedText>
+                <ThemedText type="defaultSemiBold">{userProfile.following || 0}</ThemedText>
                 <ThemedText>Following</ThemedText>
               </ThemedView>
             </ThemedView>
@@ -96,6 +118,11 @@ export default function ProfileScreen() {
             >
               <ThemedText style={styles.githubButtonText}>View on GitHub</ThemedText>
             </TouchableOpacity>
+          </ThemedView>
+        ) : (
+          <ThemedView style={styles.loadingCard}>
+            <ThemedText>Loading profile data...</ThemedText>
+            <Button title="Retry" onPress={loadProfileData} />
           </ThemedView>
         )}
       </ThemedView>
@@ -160,5 +187,17 @@ const styles = StyleSheet.create({
   githubButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  debugText: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  loadingCard: {
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginVertical: 20,
   },
 });

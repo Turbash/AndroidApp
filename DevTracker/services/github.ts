@@ -2,10 +2,8 @@ import Constants from 'expo-constants';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
-// Initialize token immediately from environment
 let authToken: string | null = null;
 
-// Initialize token at module load
 (function initToken() {
   authToken = Constants.expoConfig?.extra?.githubToken || null;
   console.log('GitHub token initialized:', authToken ? 'Yes' : 'No');
@@ -30,6 +28,9 @@ export interface GitHubUser {
   name: string;
   avatar_url: string;
   public_repos: number;
+  followers: number;
+  following: number;
+  bio: string;
 }
 
 export interface GitHubCommit {
