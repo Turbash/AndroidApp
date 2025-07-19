@@ -26,7 +26,6 @@ export default function GitHubConnectScreen() {
 
     setLoading(true);
     try {
-      // The token is automatically loaded from environment
       await fetchUserProfile(username);
       await saveGitHubUsername(username);
       Alert.alert('Success', 'GitHub account connected!', [

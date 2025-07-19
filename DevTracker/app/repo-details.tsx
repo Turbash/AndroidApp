@@ -41,7 +41,6 @@ export default function RepoDetailsScreen() {
       
       setUsername(githubUsername);
       
-      // Check cache first
       const cached = await getCachedRepoData(githubUsername, repoName as string);
       if (cached) {
         console.log(`📦 Loading repo data from cache for ${githubUsername}/${repoName}`);
@@ -55,7 +54,6 @@ export default function RepoDetailsScreen() {
       
       console.log(`🔄 Fetching fresh repo data for ${githubUsername}/${repoName}`);
       
-      // Load data with delays to avoid overwhelming the API
       const repoCommits = await fetchRepoCommits(githubUsername, repoName as string);
       await new Promise(resolve => setTimeout(resolve, 500));
       

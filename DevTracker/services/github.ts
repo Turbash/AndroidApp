@@ -90,7 +90,6 @@ async function fetchWithAuth(url: string, retries = 3, baseDelay = 1000): Promis
       
       console.log(`📊 Rate Limit: ${remaining}/${limit} remaining (resets at ${resetTime})`);
       
-      // Log if we're getting the wrong rate limit
       if (authToken && limit === '60') {
         console.warn(`⚠️ WARNING: Using authenticated token but getting unauthenticated rate limit!`);
         console.warn(`Token being sent: ${authToken.substring(0, 20)}...`);
@@ -236,7 +235,6 @@ export async function fetchRepoReadme(username: string, repoName: string): Promi
   console.log(`📖 Fetching README for: ${username}/${repoName}`);
   
   try {
-    // Ensure proper URL encoding
     const encodedUsername = encodeURIComponent(username.trim());
     const encodedRepoName = encodeURIComponent(repoName.trim());
     const url = `${GITHUB_API_BASE}/repos/${encodedUsername}/${encodedRepoName}/readme`;

@@ -3,19 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
-import { DevAnalytics, DeveloperInsights as InsightsType } from '../services/analytics';
 import {
-  analyzeProjectType,
-  fetchRepoCommits,
-  fetchRepoLanguages,
-  fetchRepoReadme,
-  fetchUserProfile,
-  fetchUserRepos,
-  GitHubRepo,
-  GitHubUser
+    analyzeProjectType,
+    fetchRepoCommits,
+    fetchRepoLanguages,
+    fetchRepoReadme,
+    fetchUserProfile,
+    fetchUserRepos,
+    GitHubRepo,
+    GitHubUser
 } from '../services/github';
+import { MLAnalytics, MLDeveloperInsights as MLInsightsType } from '../services/mlAnalytics';
 import { getCachedGitHubData, setCachedGitHubData } from '../utils/storage';
-import { DeveloperInsights } from './DeveloperInsights';
+import { MLDeveloperInsights } from './MLDeveloperInsights';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -29,10 +29,10 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [projectTypes, setProjectTypes] = useState<Record<string, string>>({});
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
-  const [insights, setInsights] = useState<InsightsType | null>(null);
   const [activeTab, setActiveTab] = useState<'repos' | 'insights'>('repos');
   const [repoLanguages, setRepoLanguages] = useState<Record<string, Record<string, number>>>({});
   const [allCommits, setAllCommits] = useState<Record<string, any[]>>({});
+  const [mlInsights, setMLInsights] = useState<MLInsightsType | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           timestamp: new Date(cached.timestamp).toLocaleString()
         });
         
-        // Validate cache data structure
+        
         if (cached.userProfile && cached.repos && Array.isArray(cached.repos) && cached.repos.length > 0) {
           console.log('✅ Cache data is valid, using cached data');
           setUser(cached.userProfile);
@@ -90,28 +90,23 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
       setRepos(userRepos);
       setLastFetched(new Date());
 
-      // Save to cache immediately after setting state
       console.log('💾 Saving fresh data to cache...');
       await setCachedGitHubData(username, userRepos, userProfile);
       console.log('✅ Data saved to cache successfully');
 
-      // Generate analytics if we have repos
       if (userRepos.length > 0) {
-        console.log('🔍 Starting analytics for', userRepos.length, 'repositories');
+        console.log('🤖 Starting ML analytics for', userRepos.length, 'repositories');
         
-        // Collect language and commit data for analytics
         const languagesData: Record<string, Record<string, number>> = {};
         const commitsData: Record<string, any[]> = {};
 
-        // Get data from top 5 repos for analytics (reduced to speed up)
-        const topRepos = userRepos.slice(0, 5);
+        const topRepos = userRepos.slice(0, 8);
         
         for (let i = 0; i < topRepos.length; i++) {
           const repo = topRepos[i];
           try {
-            console.log(`📊 Analyzing ${repo.name} (${i + 1}/${topRepos.length})`);
+            console.log(`🔬 Analyzing ${repo.name} for ML (${i + 1}/${topRepos.length})`);
             
-            // Get languages and commits in parallel
             const [languages, commits] = await Promise.all([
               fetchRepoLanguages(username, repo.name),
               fetchRepoCommits(username, repo.name)
@@ -120,12 +115,11 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
             languagesData[repo.name] = languages;
             commitsData[repo.name] = commits;
             
-            // Small delay to avoid overwhelming the API
             if (i < topRepos.length - 1) {
               await new Promise(resolve => setTimeout(resolve, 300));
             }
           } catch (error) {
-            console.error(`Failed to get data for ${repo.name}:`, error);
+            console.error(`Failed to get ML data for ${repo.name}:`, error);
             languagesData[repo.name] = {};
             commitsData[repo.name] = [];
           }
@@ -134,17 +128,15 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
         setRepoLanguages(languagesData);
         setAllCommits(commitsData);
 
-        // Generate insights
-        console.log('🧠 Generating developer insights...');
-        const developerInsights = DevAnalytics.generateCompleteInsights(
+        console.log('🧠 Generating ML-powered developer insights...');
+        const mlDeveloperInsights = await MLAnalytics.generateMLInsights(
           userRepos, 
           languagesData, 
           commitsData
         );
-        setInsights(developerInsights);
-        console.log('✅ Insights generated successfully');
+        setMLInsights(mlDeveloperInsights);
+        console.log('✅ ML insights generated successfully');
 
-        // Project types analysis
         const typesMap: Record<string, string> = {};
         for (const repo of topRepos.slice(0, 3)) {
           try {
@@ -172,14 +164,70 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
   const refreshData = async () => {
     console.log('🔄 Refreshing data...');
     setLoading(true);
-    setInsights(null);
     setRepoLanguages({});
     setAllCommits({});
     setProjectTypes({});
+    setMLInsights(null);
     
-    // Clear cache and reload
     await setCachedGitHubData(username, [], {});
     await loadGitHubData();
+  };
+
+  const refreshAnalysisOnly = async () => {
+    console.log('🔄 Refreshing analysis only (using cached GitHub data)...');
+    
+    if (repos.length === 0) {
+      console.log('⚠️ No repos available, loading GitHub data first...');
+      await loadGitHubData();
+      return;
+    }
+
+    try {
+      console.log('🤖 Re-running ML analytics on cached data...');
+      
+      const languagesData: Record<string, Record<string, number>> = {};
+      const commitsData: Record<string, any[]> = {};
+
+      const topRepos = repos.slice(0, 8);
+      
+      for (let i = 0; i < topRepos.length; i++) {
+        const repo = topRepos[i];
+        try {
+          console.log(`🔬 Re-analyzing ${repo.name} (${i + 1}/${topRepos.length})`);
+          
+          const [languages, commits] = await Promise.all([
+            fetchRepoLanguages(username, repo.name),
+            fetchRepoCommits(username, repo.name)
+          ]);
+          
+          languagesData[repo.name] = languages;
+          commitsData[repo.name] = commits;
+          
+          if (i < topRepos.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        } catch (error) {
+          console.error(`Failed to get data for ${repo.name}:`, error);
+          languagesData[repo.name] = {};
+          commitsData[repo.name] = [];
+        }
+      }
+
+      setRepoLanguages(languagesData);
+      setAllCommits(commitsData);
+
+      console.log('🧠 Generating fresh ML insights...');
+      const mlDeveloperInsights = await MLAnalytics.generateMLInsights(
+        repos, 
+        languagesData, 
+        commitsData
+      );
+      setMLInsights(mlDeveloperInsights);
+      console.log('✅ Analysis refresh completed');
+
+    } catch (error) {
+      console.error('❌ Failed to refresh analysis:', error);
+    }
   };
 
   const colorScheme = useColorScheme();
@@ -194,7 +242,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
     hasUser: !!user,
     reposCount: repos.length,
     activeTab,
-    hasInsights: !!insights
+    hasMLInsights: !!mlInsights
   });
 
   if (loading) {
@@ -220,7 +268,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
     <ThemedView style={styles.container}>
       {/* Debug Info */}
       <ThemedText style={styles.debugText}>
-        User: {user?.login || 'None'} | Repos: {repos.length} | Tab: {activeTab} | Loading: {loading.toString()}
+        User: {user?.login || 'None'} | Repos: {repos.length} | Tab: {activeTab} | ML: {mlInsights ? 'Ready' : 'Loading'}
       </ThemedText>
 
       {/* Tab Navigation */}
@@ -244,7 +292,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           }}
         >
           <ThemedText style={[styles.tabText, activeTab === 'insights' && styles.activeTabText]}>
-            🧠 Insights
+            🤖 ML Insights
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -312,17 +360,17 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
         </ThemedView>
       ) : (
         <ThemedView style={styles.insightsContainer}>
-          {insights ? (
-            <DeveloperInsights insights={insights} />
+          {mlInsights ? (
+            <MLDeveloperInsights insights={mlInsights} />
           ) : (
             <ThemedView style={styles.loadingContainer}>
-              <ThemedText>🧠 Generating your developer insights...</ThemedText>
+              <ThemedText>🤖 Analyzing your coding patterns...</ThemedText>
               <ThemedText style={styles.loadingSubtext}>
-                Analyzing your repositories and commit patterns
+                Using advanced AI to assess skills and generate insights
               </ThemedText>
               {!loading && (
-                <TouchableOpacity onPress={refreshData} style={styles.retryButton}>
-                  <ThemedText style={{ color: 'white' }}>Refresh Data</ThemedText>
+                <TouchableOpacity onPress={refreshAnalysisOnly} style={styles.retryButton}>
+                  <ThemedText style={{ color: 'white' }}>Refresh Analysis</ThemedText>
                 </TouchableOpacity>
               )}
             </ThemedView>

@@ -36,7 +36,8 @@ export default {
       typedRoutes: true
     },
     extra: {
-      githubToken: process.env.GITHUB_TOKEN
+      githubToken: process.env.GITHUB_TOKEN,
+      huggingfaceToken: process.env.HUGGINGFACE_TOKEN
     }
   }
 };
