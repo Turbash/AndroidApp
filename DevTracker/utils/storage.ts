@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GitHubUser } from '../services/github';
+import { MLDeveloperInsights } from '../services/mlAnalytics';
 
 const GITHUB_USERNAME_KEY = 'DEVTRACKER_GITHUB_USERNAME';
 const GITHUB_CACHE_KEY = 'DEVTRACKER_GITHUB_CACHE';
@@ -107,6 +109,93 @@ export async function setCachedRepoData(
     console.log(`📦 Cached repo data for ${username}/${repoName}`);
   } catch (error) {
     console.error('Error saving repo cache:', error);
+  }
+}
+
+// Cache user profile separately
+export async function setCachedUserProfile(username: string, profile: GitHubUser): Promise<void> {
+  try {
+    const cacheKey = `user_profile_${username}`;
+    const cacheData = {
+      profile,
+      timestamp: new Date().toISOString()
+    };
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    console.log('👤 User profile cached successfully');
+  } catch (error) {
+    console.error('Failed to cache user profile:', error);
+  }
+}
+
+export async function getCachedUserProfile(username: string): Promise<GitHubUser | null> {
+  try {
+    const cacheKey = `user_profile_${username}`;
+    const cached = await AsyncStorage.getItem(cacheKey);
+    
+    if (cached) {
+      const { profile, timestamp } = JSON.parse(cached);
+      const cacheAge = Date.now() - new Date(timestamp).getTime();
+      
+      // Profile cache valid for 1 hour
+      if (cacheAge < 60 * 60 * 1000) {
+        console.log('👤 Using cached user profile');
+        return profile;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to get cached user profile:', error);
+    return null;
+  }
+}
+
+// Cache ML insights separately
+export async function setCachedMLInsights(username: string, insights: MLDeveloperInsights): Promise<void> {
+  try {
+    const cacheKey = `ml_insights_${username}`;
+    const cacheData = {
+      insights,
+      timestamp: new Date().toISOString()
+    };
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    console.log('🧠 ML insights cached successfully');
+  } catch (error) {
+    console.error('Failed to cache ML insights:', error);
+  }
+}
+
+export async function getCachedMLInsights(username: string): Promise<MLDeveloperInsights | null> {
+  try {
+    const cacheKey = `ml_insights_${username}`;
+    const cached = await AsyncStorage.getItem(cacheKey);
+    
+    if (cached) {
+      const { insights, timestamp } = JSON.parse(cached);
+      const cacheAge = Date.now() - new Date(timestamp).getTime();
+      
+      // ML insights cache valid for 30 minutes
+      if (cacheAge < 30 * 60 * 1000) {
+        console.log('🧠 Using cached ML insights');
+        return insights;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to get cached ML insights:', error);
+    return null;
+  }
+}
+
+// Clear specific cache types
+export async function clearMLInsightsCache(username: string): Promise<void> {
+  try {
+    const cacheKey = `ml_insights_${username}`;
+    await AsyncStorage.removeItem(cacheKey);
+    console.log('🗑️ ML insights cache cleared');
+  } catch (error) {
+    console.error('Failed to clear ML insights cache:', error);
   }
 }
 

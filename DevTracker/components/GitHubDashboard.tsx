@@ -4,17 +4,15 @@ import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
 import {
-    analyzeProjectType,
-    fetchRepoCommits,
-    fetchRepoLanguages,
-    fetchRepoReadme,
-    fetchUserProfile,
-    fetchUserRepos,
-    GitHubRepo,
-    GitHubUser
+  fetchRepoCommits,
+  fetchRepoLanguages,
+  fetchUserProfile,
+  fetchUserRepos,
+  GitHubRepo,
+  GitHubUser
 } from '../services/github';
 import { MLAnalytics, MLDeveloperInsights as MLInsightsType } from '../services/mlAnalytics';
-import { getCachedGitHubData, setCachedGitHubData } from '../utils/storage';
+import { clearMLInsightsCache, getCachedGitHubData, getCachedMLInsights, getCachedUserProfile, setCachedGitHubData, setCachedUserProfile } from '../utils/storage';
 import { MLDeveloperInsights } from './MLDeveloperInsights';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
@@ -43,119 +41,137 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
     try {
       console.log('🔄 Starting to load GitHub data for:', username);
       
+      const cachedProfile = await getCachedUserProfile(username);
+      if (cachedProfile) {
+        console.log('👤 Using cached user profile');
+        setUser(cachedProfile);
+      }
+
       const cached = await getCachedGitHubData(username);
-      if (cached) {
-        console.log('📦 Found cached data:', { 
-          userProfile: !!cached.userProfile, 
-          reposCount: cached.repos?.length || 0,
-          timestamp: new Date(cached.timestamp).toLocaleString()
-        });
+      if (cached?.repos && cached.repos.length > 0) {
+        console.log('📦 Using cached repositories');
+        setRepos(cached.repos);
+        setLastFetched(new Date(cached.timestamp));
         
-        
-        if (cached.userProfile && cached.repos && Array.isArray(cached.repos) && cached.repos.length > 0) {
-          console.log('✅ Cache data is valid, using cached data');
-          setUser(cached.userProfile);
-          setRepos(cached.repos);
-          setLastFetched(new Date(cached.timestamp));
-          setLoading(false);
-          return;
-        } else {
-          console.log('⚠️ Cache data is invalid or empty:', {
-            hasUserProfile: !!cached.userProfile,
-            hasRepos: !!cached.repos,
-            isReposArray: Array.isArray(cached.repos),
-            reposLength: cached.repos?.length || 0
-          });
+        const cachedMLInsights = await getCachedMLInsights(username);
+        if (cachedMLInsights) {
+          console.log('🧠 Using cached ML insights');
+          setMLInsights(cachedMLInsights);
         }
-      } else {
-        console.log('📭 No cached data found');
+        
+        setLoading(false);
+        return;
       }
 
       console.log('🌐 Fetching fresh GitHub data');
       const [userProfile, userRepos] = await Promise.all([
-        fetchUserProfile(username),
+        cachedProfile || fetchUserProfile(username),
         fetchUserRepos(username)
       ]);
-      
-      console.log('✅ GitHub data fetched:', {
-        user: userProfile.login,
-        userName: userProfile.name,
-        avatarUrl: userProfile.avatar_url,
-        reposCount: userRepos.length,
-        firstRepoName: userRepos[0]?.name || 'No repos',
-        reposStructure: userRepos.slice(0, 2).map(r => ({ id: r.id, name: r.name, language: r.language }))
-      });
       
       setUser(userProfile);
       setRepos(userRepos);
       setLastFetched(new Date());
 
-      console.log('💾 Saving fresh data to cache...');
-      await setCachedGitHubData(username, userRepos, userProfile);
-      console.log('✅ Data saved to cache successfully');
+      await Promise.all([
+        setCachedUserProfile(username, userProfile),
+        setCachedGitHubData(username, userRepos, userProfile)
+      ]);
 
       if (userRepos.length > 0) {
-        console.log('🤖 Starting ML analytics for', userRepos.length, 'repositories');
-        
-        const languagesData: Record<string, Record<string, number>> = {};
-        const commitsData: Record<string, any[]> = {};
-
-        const topRepos = userRepos.slice(0, 8);
-        
-        for (let i = 0; i < topRepos.length; i++) {
-          const repo = topRepos[i];
-          try {
-            console.log(`🔬 Analyzing ${repo.name} for ML (${i + 1}/${topRepos.length})`);
-            
-            const [languages, commits] = await Promise.all([
-              fetchRepoLanguages(username, repo.name),
-              fetchRepoCommits(username, repo.name)
-            ]);
-            
-            languagesData[repo.name] = languages;
-            commitsData[repo.name] = commits;
-            
-            if (i < topRepos.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-          } catch (error) {
-            console.error(`Failed to get ML data for ${repo.name}:`, error);
-            languagesData[repo.name] = {};
-            commitsData[repo.name] = [];
-          }
-        }
-
-        setRepoLanguages(languagesData);
-        setAllCommits(commitsData);
-
-        console.log('🧠 Generating ML-powered developer insights...');
-        const mlDeveloperInsights = await MLAnalytics.generateMLInsights(
-          userRepos, 
-          languagesData, 
-          commitsData
-        );
-        setMLInsights(mlDeveloperInsights);
-        console.log('✅ ML insights generated successfully');
-
-        const typesMap: Record<string, string> = {};
-        for (const repo of topRepos.slice(0, 3)) {
-          try {
-            const readme = await fetchRepoReadme(username, repo.name);
-            if (readme) {
-              const type = await analyzeProjectType(readme);
-              typesMap[repo.name] = type;
-            }
-            await new Promise(resolve => setTimeout(resolve, 500));
-          } catch (error) {
-            console.log(`Could not analyze ${repo.name}:`, error);
-            typesMap[repo.name] = 'Unknown';
-          }
-        }
-        setProjectTypes(typesMap);
+        generateMLAnalytics(userRepos);
       }
       
     } catch (error) {
       console.error('❌ Failed to load GitHub data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateMLAnalytics = async (reposList: GitHubRepo[], useCache = true) => {
+    try {
+      console.log('🤖 Starting ML analytics generation...');
+      
+      const languagesData: Record<string, Record<string, number>> = {};
+      const commitsData: Record<string, any[]> = {};
+
+      const topRepos = reposList.slice(0, 8);
+      
+      const repoDataPromises = topRepos.map(async (repo) => {
+        try {
+          const [languages, commits] = await Promise.all([
+            fetchRepoLanguages(username, repo.name),
+            fetchRepoCommits(username, repo.name)
+          ]);
+          return { repoName: repo.name, languages, commits };
+        } catch (error) {
+          console.error(`Failed to get data for ${repo.name}:`, error);
+          return { repoName: repo.name, languages: {}, commits: [] };
+        }
+      });
+
+      const repoResults = await Promise.all(repoDataPromises);
+      
+      repoResults.forEach(({ repoName, languages, commits }) => {
+        languagesData[repoName] = languages;
+        commitsData[repoName] = commits;
+      });
+
+      setRepoLanguages(languagesData);
+      setAllCommits(commitsData);
+
+      const mlInsights = await MLAnalytics.generateMLInsights(
+        reposList, 
+        languagesData, 
+        commitsData,
+        username,
+        useCache
+      );
+      
+      setMLInsights(mlInsights);
+      console.log('✅ ML analytics completed');
+
+    } catch (error) {
+      console.error('❌ Failed to generate ML analytics:', error);
+    }
+  };
+
+  const refreshMLInsightsOnly = async () => {
+    console.log('🧠 Refreshing ML insights only...');
+    
+    if (repos.length === 0) {
+      console.log('⚠️ No repos available');
+      return;
+    }
+
+    await clearMLInsightsCache(username);
+    setMLInsights(null);
+    
+    await generateMLAnalytics(repos, false); 
+  };
+
+  const refreshGitHubDataOnly = async () => {
+    console.log('📡 Refreshing GitHub data only...');
+    setLoading(true);
+    
+    try {
+      const [userProfile, userRepos] = await Promise.all([
+        fetchUserProfile(username),
+        fetchUserRepos(username)
+      ]);
+      
+      setUser(userProfile);
+      setRepos(userRepos);
+      setLastFetched(new Date());
+
+      await Promise.all([
+        setCachedUserProfile(username, userProfile),
+        setCachedGitHubData(username, userRepos, userProfile)
+      ]);
+      
+    } catch (error) {
+      console.error('❌ Failed to refresh GitHub data:', error);
     } finally {
       setLoading(false);
     }
@@ -220,7 +236,9 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
       const mlDeveloperInsights = await MLAnalytics.generateMLInsights(
         repos, 
         languagesData, 
-        commitsData
+        commitsData,
+        username, 
+        false 
       );
       setMLInsights(mlDeveloperInsights);
       console.log('✅ Analysis refresh completed');
@@ -320,6 +338,8 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
             </ThemedView>
           )}
 
+          {/* NO GITHUB STATS HERE - ONLY IN PROFILE TAB */}
+
           {/* Recent Repos */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             Recent Repositories ({repos.length})
@@ -361,16 +381,27 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
       ) : (
         <ThemedView style={styles.insightsContainer}>
           {mlInsights ? (
-            <MLDeveloperInsights insights={mlInsights} />
+            <>
+              <ThemedView style={styles.refreshButtonsContainer}>
+                <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.fastRefreshButton}>
+                  <ThemedText style={styles.refreshButtonText}>🧠 Refresh Insights</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={refreshGitHubDataOnly} style={styles.fastRefreshButton}>
+                  <ThemedText style={styles.refreshButtonText}>📡 Refresh Data</ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
+              {/* NO GITHUB STATS HERE - ONLY IN REPOS TAB */}
+              <MLDeveloperInsights insights={mlInsights} username={username} />
+            </>
           ) : (
             <ThemedView style={styles.loadingContainer}>
-              <ThemedText>🤖 Analyzing your coding patterns...</ThemedText>
+              <ThemedText>🤖 Generating ML insights...</ThemedText>
               <ThemedText style={styles.loadingSubtext}>
-                Using advanced AI to assess skills and generate insights
+                Using parallel processing for faster analysis
               </ThemedText>
               {!loading && (
-                <TouchableOpacity onPress={refreshAnalysisOnly} style={styles.retryButton}>
-                  <ThemedText style={{ color: 'white' }}>Refresh Analysis</ThemedText>
+                <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.retryButton}>
+                  <ThemedText style={{ color: 'white' }}>Generate Insights</ThemedText>
                 </TouchableOpacity>
               )}
             </ThemedView>
@@ -501,5 +532,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     opacity: 0.7,
     padding: 20,
+  },
+  refreshButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
+  },
+  fastRefreshButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

@@ -17,10 +17,28 @@ let authToken: string | null = null;
 export interface GitHubRepo {
   id: number;
   name: string;
-  language: string;
-  description: string;
-  updated_at: string;
+  full_name: string;
+  description: string | null;
+  private: boolean;
   html_url: string;
+  clone_url: string;
+  ssh_url: string;
+  size: number;
+  stargazers_count: number; 
+  watchers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  language: string | null;
+  topics: string[];
+  created_at: string;
+  updated_at: string;
+  pushed_at: string;
+  default_branch: string;
+  has_issues: boolean;
+  has_wiki: boolean;
+  license: {
+    name: string;
+  } | null;
 }
 
 export interface GitHubUser {
@@ -35,14 +53,38 @@ export interface GitHubUser {
 
 export interface GitHubCommit {
   sha: string;
+  node_id: string;
+  html_url: string;
   commit: {
-    message: string;
     author: {
       name: string;
+      email: string; 
       date: string;
     };
+    committer: {
+      name: string;
+      email: string; 
+      date: string;
+    };
+    message: string;
+    tree: {
+      sha: string;
+      url: string;
+    };
+    url: string;
   };
-  html_url: string;
+  author: {
+    login: string;
+    id: number;
+    avatar_url: string;
+    html_url: string;
+  } | null;
+  committer: {
+    login: string;
+    id: number;
+    avatar_url: string;
+    html_url: string;
+  } | null;
 }
 
 export interface GitHubReadme {
@@ -69,7 +111,6 @@ async function fetchWithAuth(url: string, retries = 3, baseDelay = 1000): Promis
     'User-Agent': 'DevTracker-App'
   };
 
-  // Always add the token if available
   if (authToken) {
     headers['Authorization'] = `token ${authToken}`;
     console.log(`🔑 Using token: ${authToken.substring(0, 15)}... (length: ${authToken.length})`);
@@ -293,4 +334,115 @@ export async function analyzeProjectType(readmeContent: string): Promise<string>
   
   console.log(`🏷️ Project type determined: ${projectType}`);
   return projectType;
+}
+
+export class GitHubService {
+  static async getAllCommits(
+    username: string, 
+    repos: GitHubRepo[]
+  ): Promise<Record<string, GitHubCommit[]>> {
+    console.log(`📈 Fetching commits for ALL ${repos.length} repositories...`);
+    
+    const allCommits: Record<string, GitHubCommit[]> = {};
+    
+    // Process ALL repos, not just a subset
+    const commitPromises = repos.map(async (repo) => {
+      try {
+        console.log(`📈 Fetching commits for ${repo.name}...`);
+        
+        // Fetch more commits per repo (up to 100 per page)
+        const commits = await this.getCommits(username, repo.name, 100);
+        
+        if (commits.length > 0) {
+          allCommits[repo.name] = commits;
+          console.log(`✅ Got ${commits.length} commits for ${repo.name}`);
+        } else {
+          console.log(`⚠️ No commits found for ${repo.name}`);
+        }
+        
+        return { repo: repo.name, count: commits.length };
+      } catch (error: any) {
+        console.log(`❌ Failed to fetch commits for ${repo.name}:`, error.message);
+        return { repo: repo.name, count: 0 };
+      }
+    });
+    
+    // Wait for all commit fetches to complete
+    const results = await Promise.all(commitPromises);
+    
+    const totalCommits = Object.values(allCommits).reduce((sum, commits) => sum + commits.length, 0);
+    const reposWithCommits = Object.keys(allCommits).length;
+    
+    console.log(`📈 ✅ Commit fetch summary:`);
+    console.log(`   - Repos processed: ${repos.length}`);
+    console.log(`   - Repos with commits: ${reposWithCommits}`);
+    console.log(`   - Total commits: ${totalCommits}`);
+    
+    results.forEach(result => {
+      console.log(`   - ${result.repo}: ${result.count} commits`);
+    });
+    
+    return allCommits;
+  }
+
+  private static async getCommits(
+    username: string, 
+    repoName: string, 
+    perPage: number = 100
+  ): Promise<GitHubCommit[]> {
+    try {
+      // Fetch more commits by increasing per_page and adding pagination
+      let allCommits: GitHubCommit[] = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore && allCommits.length < 200) { // Limit to 200 commits per repo max
+        const url = `https://api.github.com/repos/${username}/${repoName}/commits?per_page=${perPage}&page=${page}`;
+        
+        const response = await fetch(url, {
+          headers: this.getHeaders(),
+        });
+        
+        if (!response.ok) {
+          if (response.status === 409) {
+            console.log(`⚠️ ${repoName} is empty (no commits)`);
+            return [];
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const commits = await response.json();
+        
+        if (commits.length === 0) {
+          hasMore = false;
+        } else {
+          allCommits = allCommits.concat(commits);
+          page++;
+          
+          // Stop if we got less than requested (last page)
+          if (commits.length < perPage) {
+            hasMore = false;
+          }
+        }
+      }
+      
+      return allCommits;
+    } catch (error: any) {
+      console.log(`❌ Error fetching commits for ${repoName}:`, error.message);
+      return [];
+    }
+  }
+
+  private static getHeaders() {
+    const headers: Record<string, string> = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'DevTracker-App'
+    };
+
+    if (authToken) {
+      headers['Authorization'] = `token ${authToken}`;
+    }
+
+    return headers;
+  }
 }

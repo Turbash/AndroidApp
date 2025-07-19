@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { Button, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { GitHubStatsDisplay } from '../../components/GitHubStatsDisplay';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
@@ -86,39 +87,44 @@ export default function ProfileScreen() {
         </ThemedText>
         
         {userProfile ? (
-          <ThemedView style={[styles.profileCard, { backgroundColor: cardBg }]}>
-            <Image source={{ uri: userProfile.avatar_url }} style={styles.avatar} />
-            <ThemedText type="subtitle" style={styles.name}>
-              {userProfile.name || userProfile.login}
-            </ThemedText>
-            <ThemedText style={styles.username}>@{userProfile.login}</ThemedText>
-            
-            {userProfile.bio && (
-              <ThemedText style={styles.bio}>{userProfile.bio}</ThemedText>
-            )}
-            
-            <ThemedView style={styles.statsContainer}>
-              <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.public_repos || 0}</ThemedText>
-                <ThemedText>Repositories</ThemedText>
+          <>
+            <ThemedView style={[styles.profileCard, { backgroundColor: cardBg }]}>
+              <Image source={{ uri: userProfile.avatar_url }} style={styles.avatar} />
+              <ThemedText type="subtitle" style={styles.name}>
+                {userProfile.name || userProfile.login}
+              </ThemedText>
+              <ThemedText style={styles.username}>@{userProfile.login}</ThemedText>
+              
+              {userProfile.bio && (
+                <ThemedText style={styles.bio}>{userProfile.bio}</ThemedText>
+              )}
+              
+              <ThemedView style={styles.statsContainer}>
+                <ThemedView style={styles.statItem}>
+                  <ThemedText type="defaultSemiBold">{userProfile.public_repos || 0}</ThemedText>
+                  <ThemedText>Repositories</ThemedText>
+                </ThemedView>
+                <ThemedView style={styles.statItem}>
+                  <ThemedText type="defaultSemiBold">{userProfile.followers || 0}</ThemedText>
+                  <ThemedText>Followers</ThemedText>
+                </ThemedView>
+                <ThemedView style={styles.statItem}>
+                  <ThemedText type="defaultSemiBold">{userProfile.following || 0}</ThemedText>
+                  <ThemedText>Following</ThemedText>
+                </ThemedView>
               </ThemedView>
-              <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.followers || 0}</ThemedText>
-                <ThemedText>Followers</ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.statItem}>
-                <ThemedText type="defaultSemiBold">{userProfile.following || 0}</ThemedText>
-                <ThemedText>Following</ThemedText>
-              </ThemedView>
+              
+              <TouchableOpacity 
+                style={styles.githubButton}
+                onPress={() => openBrowserAsync(`https://github.com/${githubUsername}`)}
+              >
+                <ThemedText style={styles.githubButtonText}>View on GitHub</ThemedText>
+              </TouchableOpacity>
             </ThemedView>
-            
-            <TouchableOpacity 
-              style={styles.githubButton}
-              onPress={() => openBrowserAsync(`https://github.com/${githubUsername}`)}
-            >
-              <ThemedText style={styles.githubButtonText}>View on GitHub</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+
+            {/* GitHub Stats Display - SHOW IN PROFILE TAB */}
+            <GitHubStatsDisplay username={githubUsername} languageCount={15} />
+          </>
         ) : (
           <ThemedView style={styles.loadingCard}>
             <ThemedText>Loading profile data...</ThemedText>

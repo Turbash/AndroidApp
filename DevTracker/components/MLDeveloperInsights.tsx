@@ -1,12 +1,14 @@
 import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { MLDeveloperInsights as InsightsType } from '../services/mlAnalytics';
+import { AIUnavailableState } from './AIUnavailableState';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
 interface MLDeveloperInsightsProps {
   insights: InsightsType;
+  username: string;
 }
 
 const getComplexityColor = (complexity: number): string => {
@@ -17,11 +19,9 @@ const getComplexityColor = (complexity: number): string => {
 
 const getDebtColor = (debt: number): string => {
   if (debt < 0.3) return '#4CAF50'; 
-  
   if (debt < 0.6) return '#FF9800'; 
   return '#F44336';
 };
-
 
 const getPriorityColor = (priority: number): string => {
   if (priority > 0.8) return '#F44336'; 
@@ -29,48 +29,55 @@ const getPriorityColor = (priority: number): string => {
   return '#4CAF50';
 };
 
-export function MLDeveloperInsights({ insights }: MLDeveloperInsightsProps) {
+export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsProps) {
   const cardBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
   const accentColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'text');
   
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* ML Skill Assessment */}
+      {/* AI Skill Assessment */}
       <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
           🤖 AI Skill Assessment
         </ThemedText>
-        {insights.skillLevel.length > 0 ? (
-          insights.skillLevel.map((skill) => (
-            <ThemedView key={skill.language} style={styles.skillItem}>
-              <ThemedView style={styles.skillHeader}>
-                <ThemedText style={styles.skillName}>{skill.language}</ThemedText>
-                <ThemedView style={styles.skillScores}>
-                  <ThemedText style={styles.proficiencyScore}>
-                    {Math.round(skill.proficiencyScore * 100)}%
-                  </ThemedText>
-                  <ThemedText style={styles.confidence}>
-                    {Math.round(skill.confidence * 100)}% confidence
-                  </ThemedText>
+        {insights.skillLevel && insights.skillLevel.length > 0 ? (
+          <>
+            <ThemedText style={styles.successIndicator}>
+              ✅ AI Analysis Successful
+            </ThemedText>
+            {insights.skillLevel.map((skill) => (
+              <ThemedView key={skill.language} style={styles.skillItem}>
+                <ThemedView style={styles.skillHeader}>
+                  <ThemedText style={styles.skillName}>{skill.language}</ThemedText>
+                  <ThemedView style={styles.skillScores}>
+                    <ThemedText style={styles.proficiencyScore}>
+                      {Math.round(skill.proficiencyScore * 100)}%
+                    </ThemedText>
+                    <ThemedText style={styles.confidence}>
+                      {Math.round(skill.confidence * 100)}% confidence
+                    </ThemedText>
+                  </ThemedView>
                 </ThemedView>
+                <ThemedView style={styles.progressBar}>
+                  <ThemedView 
+                    style={[styles.progressFill, { 
+                      width: `${Math.round(skill.proficiencyScore * 100)}%`,
+                      backgroundColor: accentColor 
+                    }]} 
+                  />
+                </ThemedView>
+                <ThemedText style={styles.modelInfo}>
+                  {skill.modelVersion} - {new Date(skill.lastAssessed).toLocaleDateString()}
+                </ThemedText>
               </ThemedView>
-              <ThemedView style={styles.progressBar}>
-                <ThemedView 
-                  style={[styles.progressFill, { 
-                    width: `${skill.proficiencyScore * 100}%`,
-                    backgroundColor: accentColor 
-                  }]} 
-                />
-              </ThemedView>
-              <ThemedText style={styles.modelInfo}>
-                Model: {skill.modelVersion} • Assessed: {new Date(skill.lastAssessed).toLocaleDateString()}
-              </ThemedText>
-            </ThemedView>
-          ))
+            ))}
+          </>
         ) : (
-          <ThemedText style={styles.emptyState}>
-            Building your skill profile...
-          </ThemedText>
+          <AIUnavailableState 
+            title="AI skill analysis unavailable"
+            description="The AI models couldn't analyze programming skills. This could be due to API limits or network issues."
+            icon="🎯"
+          />
         )}
       </ThemedView>
 
@@ -79,32 +86,55 @@ export function MLDeveloperInsights({ insights }: MLDeveloperInsightsProps) {
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
           📈 Coding Pattern Analysis
         </ThemedText>
-        <ThemedView style={styles.metricsGrid}>
-          <ThemedView style={styles.metricCard}>
-            <ThemedText style={styles.metricValue}>
-              {Math.round(insights.codingPatterns.commitPatterns.consistency * 100)}%
+        {insights.codingPatterns && insights.codingPatterns.confidence > 0 ? (
+          <>
+            <ThemedText style={styles.successIndicator}>
+              ✅ AI Analysis Successful
             </ThemedText>
-            <ThemedText style={styles.metricLabel}>Consistency</ThemedText>
-          </ThemedView>
-          <ThemedView style={styles.metricCard}>
-            <ThemedText style={styles.metricValue}>
-              {Math.round(insights.codingPatterns.commitPatterns.velocity * 100)}%
-            </ThemedText>
-            <ThemedText style={styles.metricLabel}>Velocity</ThemedText>
-          </ThemedView>
-          <ThemedView style={styles.metricCard}>
-            <ThemedText style={styles.metricValue}>
-              {Math.round(insights.codingPatterns.codeQuality.structure * 100)}%
-            </ThemedText>
-            <ThemedText style={styles.metricLabel}>Code Quality</ThemedText>
-          </ThemedView>
-          <ThemedView style={styles.metricCard}>
-            <ThemedText style={styles.metricValue}>
-              {Math.round(insights.codingPatterns.productivityTrends.outputRate * 100)}%
-            </ThemedText>
-            <ThemedText style={styles.metricLabel}>Productivity</ThemedText>
-          </ThemedView>
-        </ThemedView>
+            <ThemedView style={styles.metricsGrid}>
+              <ThemedView style={styles.metricCard}>
+                <ThemedText style={styles.metricValue}>
+                  {Math.round(insights.codingPatterns.commitPatterns.consistency * 100)}%
+                </ThemedText>
+                <ThemedText style={styles.metricLabel}>Consistency</ThemedText>
+              </ThemedView>
+              <ThemedView style={styles.metricCard}>
+                <ThemedText style={styles.metricValue}>
+                  {Math.round(insights.codingPatterns.commitPatterns.velocity * 100)}%
+                </ThemedText>
+                <ThemedText style={styles.metricLabel}>Velocity</ThemedText>
+              </ThemedView>
+              <ThemedView style={styles.metricCard}>
+                <ThemedText style={styles.metricValue}>
+                  {Math.round(insights.codingPatterns.codeQuality.structure * 100)}%
+                </ThemedText>
+                <ThemedText style={styles.metricLabel}>Code Quality</ThemedText>
+              </ThemedView>
+              <ThemedView style={styles.metricCard}>
+                <ThemedText style={styles.metricValue}>
+                  {Math.round(insights.codingPatterns.productivityTrends.outputRate * 100)}%
+                </ThemedText>
+                <ThemedText style={styles.metricLabel}>Productivity</ThemedText>
+              </ThemedView>
+            </ThemedView>
+            {insights.codingPatterns.patterns && insights.codingPatterns.patterns.length > 0 && (
+              <ThemedView style={styles.patternsContainer}>
+                <ThemedText style={styles.patternsTitle}>Detected Patterns:</ThemedText>
+                {insights.codingPatterns.patterns.map((pattern, index) => (
+                  <ThemedText key={index} style={styles.patternItem}>
+                    • {pattern}
+                  </ThemedText>
+                ))}
+              </ThemedView>
+            )}
+          </>
+        ) : (
+          <AIUnavailableState 
+            title="Pattern analysis unavailable"
+            description="The AI couldn't analyze coding patterns. This might be due to insufficient commit data or API limitations."
+            icon="📈"
+          />
+        )}
       </ThemedView>
 
       {/* Project Complexity */}
@@ -112,37 +142,88 @@ export function MLDeveloperInsights({ insights }: MLDeveloperInsightsProps) {
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
           🏗️ Project Complexity Analysis
         </ThemedText>
-        <ThemedView style={styles.complexityContainer}>
-          <ThemedView style={styles.complexityItem}>
-            <ThemedText style={styles.complexityLabel}>Overall Complexity</ThemedText>
-            <ThemedView style={styles.complexityBar}>
-              <ThemedView 
-                style={[styles.complexityFill, { 
-                  width: `${insights.projectComplexity.overallComplexity * 100}%`,
-                  backgroundColor: getComplexityColor(insights.projectComplexity.overallComplexity)
-                }]} 
-              />
-            </ThemedView>
-            <ThemedText style={styles.complexityValue}>
-              {Math.round(insights.projectComplexity.overallComplexity * 100)}%
+        {insights.projectComplexity && insights.projectComplexity.overallComplexity > 0 ? (
+          <>
+            <ThemedText style={styles.successIndicator}>
+              ✅ AI Analysis Successful
             </ThemedText>
-          </ThemedView>
-          
-          <ThemedView style={styles.complexityItem}>
-            <ThemedText style={styles.complexityLabel}>Technical Debt</ThemedText>
-            <ThemedView style={styles.complexityBar}>
-              <ThemedView 
-                style={[styles.complexityFill, { 
-                  width: `${insights.projectComplexity.technicalDebt * 100}%`,
-                  backgroundColor: getDebtColor(insights.projectComplexity.technicalDebt)
-                }]} 
-              />
+            <ThemedView style={styles.complexityContainer}>
+              <ThemedView style={styles.complexityItem}>
+                <ThemedText style={styles.complexityLabel}>Overall Complexity</ThemedText>
+                <ThemedView style={styles.complexityBar}>
+                  <ThemedView 
+                    style={[styles.complexityFill, { 
+                      width: `${insights.projectComplexity.overallComplexity}%`,
+                      backgroundColor: getComplexityColor(insights.projectComplexity.overallComplexity / 100)
+                    }]} 
+                  />
+                </ThemedView>
+                <ThemedText style={styles.complexityValue}>
+                  {Math.round(insights.projectComplexity.overallComplexity)}%
+                </ThemedText>
+              </ThemedView>
+              
+              <ThemedView style={styles.complexityItem}>
+                <ThemedText style={styles.complexityLabel}>Technical Debt</ThemedText>
+                <ThemedView style={styles.complexityBar}>
+                  <ThemedView 
+                    style={[styles.complexityFill, { 
+                      width: `${insights.projectComplexity.technicalDebt}%`,
+                      backgroundColor: getDebtColor(insights.projectComplexity.technicalDebt / 100)
+                    }]} 
+                  />
+                </ThemedView>
+                <ThemedText style={styles.complexityValue}>
+                  {Math.round(insights.projectComplexity.technicalDebt)}%
+                </ThemedText>
+              </ThemedView>
+
+              <ThemedView style={styles.complexityItem}>
+                <ThemedText style={styles.complexityLabel}>Architecture</ThemedText>
+                <ThemedView style={styles.complexityBar}>
+                  <ThemedView 
+                    style={[styles.complexityFill, { 
+                      width: `${insights.projectComplexity.architecturalMaturity}%`,
+                      backgroundColor: getComplexityColor(insights.projectComplexity.architecturalMaturity / 100)
+                    }]} 
+                  />
+                </ThemedView>
+                <ThemedText style={styles.complexityValue}>
+                  {Math.round(insights.projectComplexity.architecturalMaturity)}%
+                </ThemedText>
+              </ThemedView>
+
+              <ThemedView style={styles.complexityItem}>
+                <ThemedText style={styles.complexityLabel}>Scalability</ThemedText>
+                <ThemedView style={styles.complexityBar}>
+                  <ThemedView 
+                    style={[styles.complexityFill, { 
+                      width: `${insights.projectComplexity.scalabilityScore}%`,
+                      backgroundColor: getComplexityColor(insights.projectComplexity.scalabilityScore / 100)
+                    }]} 
+                  />
+                </ThemedView>
+                <ThemedText style={styles.complexityValue}>
+                  {Math.round(insights.projectComplexity.scalabilityScore)}%
+                </ThemedText>
+              </ThemedView>
             </ThemedView>
-            <ThemedText style={styles.complexityValue}>
-              {Math.round(insights.projectComplexity.technicalDebt * 100)}%
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
+            {insights.projectComplexity.reasoning && (
+              <ThemedView style={styles.reasoningContainer}>
+                <ThemedText style={styles.reasoningTitle}>AI Reasoning:</ThemedText>
+                <ThemedText style={styles.reasoningText}>
+                  {insights.projectComplexity.reasoning}
+                </ThemedText>
+              </ThemedView>
+            )}
+          </>
+        ) : (
+          <AIUnavailableState 
+            title="Complexity analysis unavailable"
+            description="The AI couldn't analyze project complexity. This could be due to insufficient repository data or API issues."
+            icon="🏗️"
+          />
+        )}
       </ThemedView>
 
       {/* Career Recommendations */}
@@ -150,27 +231,40 @@ export function MLDeveloperInsights({ insights }: MLDeveloperInsightsProps) {
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
           💼 AI Career Recommendations
         </ThemedText>
-        {insights.careerRecommendations.map((career, index) => (
-          <ThemedView key={index} style={styles.careerItem}>
-            <ThemedView style={styles.careerHeader}>
-              <ThemedText style={styles.careerRole}>{career.role}</ThemedText>
-              <ThemedText style={[styles.matchScore, { color: accentColor }]}>
-                {Math.round(career.matchScore * 100)}% match
-              </ThemedText>
-            </ThemedView>
-            <ThemedText style={styles.timeToTransition}>
-              Time to transition: {career.timeToTransition} months
+        {insights.careerRecommendations && insights.careerRecommendations.length > 0 ? (
+          <>
+            <ThemedText style={styles.successIndicator}>
+              ✅ AI Analysis Successful
             </ThemedText>
-            <ThemedText style={styles.requiredSkills}>
-              Skills needed: {career.requiredSkills.join(', ')}
-            </ThemedText>
-            <ThemedView style={styles.confidenceContainer}>
-              <ThemedText style={styles.confidenceText}>
-                AI Confidence: {Math.round(career.confidence * 100)}%
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-        ))}
+            {insights.careerRecommendations.map((career, index) => (
+              <ThemedView key={index} style={styles.careerItem}>
+                <ThemedView style={styles.careerHeader}>
+                  <ThemedText style={styles.careerRole}>{career.role}</ThemedText>
+                  <ThemedText style={[styles.matchScore, { color: accentColor }]}>
+                    {Math.round(career.matchScore * 100)}% match
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText style={styles.timeToTransition}>
+                  Time to transition: {career.timeToTransition} months
+                </ThemedText>
+                <ThemedText style={styles.requiredSkills}>
+                  Skills needed: {career.requiredSkills.join(', ')}
+                </ThemedText>
+                <ThemedView style={styles.confidenceContainer}>
+                  <ThemedText style={styles.confidenceText}>
+                    AI Confidence: {Math.round(career.confidence * 100)}%
+                  </ThemedText>
+                </ThemedView>
+              </ThemedView>
+            ))}
+          </>
+        ) : (
+          <AIUnavailableState 
+            title="Career analysis unavailable"
+            description="The AI couldn't generate career recommendations. This might be due to insufficient profile data or API limitations."
+            icon="💼"
+          />
+        )}
       </ThemedView>
 
       {/* Learning Path */}
@@ -178,27 +272,40 @@ export function MLDeveloperInsights({ insights }: MLDeveloperInsightsProps) {
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
           📚 Personalized Learning Path
         </ThemedText>
-        {insights.learningPath.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.learningItem}>
-            <ThemedView style={styles.learningHeader}>
-              <ThemedText style={styles.learningSkill}>{item.skill}</ThemedText>
-              <ThemedText style={[styles.priority, { 
-                color: getPriorityColor(item.priority) 
-              }]}>
-                Priority: {Math.round(item.priority * 100)}%
-              </ThemedText>
-            </ThemedView>
-            <ThemedText style={styles.learningReasoning}>{item.reasoning}</ThemedText>
-            <ThemedView style={styles.learningMeta}>
-              <ThemedText style={styles.estimatedTime}>
-                ⏱️ {item.estimatedTime} hours
-              </ThemedText>
-              <ThemedText style={styles.difficulty}>
-                📊 Difficulty: {Math.round(item.difficulty * 10)}/10
-              </ThemedText>
-            </ThemedView>
-          </TouchableOpacity>
-        ))}
+        {insights.learningPath && insights.learningPath.length > 0 ? (
+          <>
+            <ThemedText style={styles.successIndicator}>
+              ✅ AI Analysis Successful
+            </ThemedText>
+            {insights.learningPath.map((item, index) => (
+              <ThemedView key={index} style={styles.learningItem}>
+                <ThemedView style={styles.learningHeader}>
+                  <ThemedText style={styles.learningSkill}>{item.skill}</ThemedText>
+                  <ThemedText style={[styles.priority, { 
+                    color: getPriorityColor(item.priority) 
+                  }]}>
+                    Priority: {Math.round(item.priority * 100)}%
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText style={styles.learningReasoning}>{item.reasoning}</ThemedText>
+                <ThemedView style={styles.learningMeta}>
+                  <ThemedText style={styles.estimatedTime}>
+                    ⏱️ {item.estimatedTime} hours
+                  </ThemedText>
+                  <ThemedText style={styles.difficulty}>
+                    📊 Difficulty: {Math.round(item.difficulty * 10)}/10
+                  </ThemedText>
+                </ThemedView>
+              </ThemedView>
+            ))}
+          </>
+        ) : (
+          <AIUnavailableState 
+            title="Learning path unavailable"
+            description="The AI couldn't create a personalized learning path. This could be due to API limits or insufficient data."
+            icon="📚"
+          />
+        )}
       </ThemedView>
     </ScrollView>
   );
@@ -374,10 +481,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
   },
-  emptyState: {
-    textAlign: 'center',
+  successIndicator: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  patternsContainer: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 6,
+  },
+  patternsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  patternItem: {
+    fontSize: 12,
+    opacity: 0.8,
+    marginLeft: 8,
+    marginBottom: 2,
+  },
+  reasoningContainer: {
+    marginTop: 12,
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 6,
+  },
+  reasoningTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  reasoningText: {
+    fontSize: 12,
+    opacity: 0.8,
     fontStyle: 'italic',
-    opacity: 0.7,
-    padding: 20,
   },
 });
