@@ -86,6 +86,8 @@ class DevAnalysisResponse(BaseModel):
     learning_path: List[str]
     estimated_hours: int
     motivation_message: str
+    project_complexity: Optional[dict] = None
+    coding_patterns: Optional[dict] = None
     ai_success: bool = True
     source: str = "ai"  
 
@@ -294,7 +296,7 @@ def analyze_github_data(github_data: GitHubAnalysisRequest) -> dict:
         }
 
 def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
-    """Single comprehensive analysis of developer's GitHub profile"""
+    """Single comprehensive analysis of developer's GitHub profile, including complexity and pattern analysis"""
     try:
         def format_langs(repo_languages):
             items = []
@@ -307,24 +309,20 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
 
         languages = format_langs(data.repo_languages)
         recent_commits = "\n".join(data.commit_messages[-15:])  # Last 15 commits
-        
+
         prompt = f"""
-        Analyze this developer's complete profile and provide personalized learning insights:
-        
+        Analyze this developer's complete profile and provide personalized learning insights.
+
         Developer: {data.username}
         Total Repositories: {data.total_repos}
         Total Commits: {data.total_commits}
-        
         Programming Languages Used: {languages}
-        
         Repository Names: {', '.join(data.repo_names[:10])}
-        
         Recent Commit Messages:
         {recent_commits}
-        
         README Sample:
         {data.readme_content[:300] if data.readme_content else "No README available"}
-        
+
         Provide a comprehensive analysis in this exact JSON format:
         {{
             "summary": "2-3 sentence overview of their current development level",
@@ -338,27 +336,40 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
             ],
             "learning_path": ["step1", "step2", "step3", "step4"],
             "estimated_hours": 40,
-            "motivation_message": "Encouraging message for the developer"
+            "motivation_message": "Encouraging message for the developer",
+            "project_complexity": {{
+                "overall": 0-100,
+                "technicalDebt": 0-100,
+                "architecture": 0-100,
+                "scalability": 0-100,
+                "reasoning": "Short reasoning about complexity"
+            }},
+            "coding_patterns": {{
+                "consistency": 0-100,
+                "velocity": 0-100,
+                "quality": 0-100,
+                "patterns": ["pattern1", "pattern2"],
+                "confidence": 0-1
+            }}
         }}
-        
+
         Make it personal, actionable, and motivating based on their actual coding activity.
         """
-        
+
         response = g4f_client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
+            max_tokens=1200,
             temperature=0.6
         )
-        
+
         if response and response.choices:
             content = response.choices[0].message.content
             try:
                 if '{' in content and '}' in content:
                     json_start = content.find('{')
                     json_end = content.rfind('}') + 1
-                    json_str = content[json_start:json_end]
-                    result = json.loads(json_str)
+                    result = json.loads(content[json_start:json_end])
                     result["ai_success"] = True
                     result["source"] = "ai"
                     return result
@@ -379,6 +390,20 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
         "learning_path": [],
         "estimated_hours": 0,
         "motivation_message": "Keep coding and learning! (Fallback response)",
+        "project_complexity": {
+            "overall": 0,
+            "technicalDebt": 0,
+            "architecture": 0,
+            "scalability": 0,
+            "reasoning": ""
+        },
+        "coding_patterns": {
+            "consistency": 0,
+            "velocity": 0,
+            "quality": 0,
+            "patterns": [],
+            "confidence": 0
+        },
         "ai_success": False,
         "source": "fallback"
     }
@@ -455,6 +480,15 @@ async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
             analyze_developer_profile,
             request
         )
+
+        if isinstance(analysis, str):
+            try:
+                analysis = json.loads(analysis)
+                logger.info(f"Parsed string AI response successfully: {analysis}")
+            except Exception as e:
+                logger.error(f"Failed to parse string AI response: {e}")
+                analysis = {}
+
         if not analysis or not isinstance(analysis, dict) or "summary" not in analysis:
             logger.warning("Analysis dict missing or invalid, using fallback.")
             analysis = {
@@ -467,9 +501,12 @@ async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
                 "learning_path": [],
                 "estimated_hours": 0,
                 "motivation_message": "Keep coding and learning! (Fallback response)",
+                "project_complexity": None,
+                "coding_patterns": None,
                 "ai_success": False,
                 "source": "fallback"
             }
+        logger.info(f"Final DevAnalysisResponse: {analysis}")
         return DevAnalysisResponse(**analysis)
     except Exception as e:
         logger.error(f"Developer profile analysis error: {str(e)}")
@@ -484,6 +521,8 @@ async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
             learning_path=[],
             estimated_hours=0,
             motivation_message="Keep coding and learning! (Fallback response)",
+            project_complexity=None,
+            coding_patterns=None,
             ai_success=False,
             source="fallback"
         )

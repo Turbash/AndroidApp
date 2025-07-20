@@ -14,9 +14,9 @@ export class MLModelsService {
     allCommits: Record<string, GitHubCommit[]>,
     username: string,
     useCache: boolean = true,
-    getCachedMLInsights?: (username: string) => Promise<AIAnalysisResult | null>,
-    setCachedMLInsights?: (username: string, result: AIAnalysisResult) => Promise<void>
-  ): Promise<AIAnalysisResult> {
+    getCachedMLInsights?: (username: string) => Promise<any>,
+    setCachedMLInsights?: (username: string, result: any) => Promise<void>
+  ): Promise<any> {
     try {
       if (useCache && getCachedMLInsights) {
         const cached = await getCachedMLInsights(username);
@@ -62,38 +62,16 @@ export class MLModelsService {
       const result = await response.json();
       console.log('✅ Backend AI analysis result:', result);
 
-      const mappedResult: AIAnalysisResult = {
-        skills: (result.top_languages || []).map((lang: string, idx: number) => ({
-          language: lang,
-          level: result.skill_level || 'unknown',
-          confidence: 0.7,
-          reasoning: result.strengths?.[idx] || ''
-        })),
-        codingPatterns: null,
-        projectComplexity: null,
-        careerRecommendations: (result.recommended_goals || []).map((goal: any) => ({
-          role: goal.title || '',
-          match: 1,
-          transition: 1,
-          skills: [],
-          reasoning: goal.description || ''
-        })),
-        learningPath: (result.learning_path || []).map((step: string) => ({
-          skill: step,
-          priority: 'medium',
-          hours: 10,
-          difficulty: 5,
-          reasoning: ''
-        }))
-      };
-
       if (setCachedMLInsights) {
-        await setCachedMLInsights(username, mappedResult);
+        await setCachedMLInsights(username, result);
       }
 
-      return mappedResult;
+      return result;
     } catch (error) {
       console.error('❌ AI analysis failed:', error);
+      if (error instanceof TypeError && error.message.includes('Already read')) {
+        console.error('❌ You tried to read the response body twice. Only call response.json() or response.text() once per fetch response.');
+      }
       if (error instanceof TypeError && error.message.includes('Network request failed')) {
         console.error('❌ Network error: Check your BACKEND_URL, device/emulator network, and backend server status.');
         console.error('❌ Make sure your backend is running and accessible at:', `${BACKEND_URL}/analyze-dev-profile`);
@@ -116,38 +94,34 @@ export class MLModelsService {
 }
 
 export interface AIAnalysisResult {
-  skills: Array<{
-    language: string;
-    level: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'unknown';
-    confidence: number;
-    reasoning: string;
-  }>;
-  codingPatterns: {
-    consistency: number;
-    velocity: number;
-    quality: number;
-    patterns: string[];
-    confidence: number;
-  } | null;
-  projectComplexity: {
+  summary: string;
+  skill_level: string;
+  top_languages: string[];
+  strengths: string[];
+  improvement_areas: string[];
+  recommended_goals: {
+    title: string;
+    category: string;
+    description: string;
+    timeline: string;
+  }[];
+  learning_path: string[];
+  estimated_hours: number;
+  motivation_message: string;
+  project_complexity?: {
     overall: number;
     technicalDebt: number;
     architecture: number;
     scalability: number;
     reasoning: string;
-  } | null;
-  careerRecommendations: Array<{
-    role: string;
-    match: number;
-    transition: number;
-    skills: string[];
-    reasoning: string;
-  }>;
-  learningPath: Array<{
-    skill: string;
-    priority: 'high' | 'medium' | 'low';
-    hours: number;
-    difficulty: number;
-    reasoning: string;
-  }>;
+  };
+  coding_patterns?: {
+    consistency: number;
+    velocity: number;
+    quality: number;
+    patterns: string[];
+    confidence: number;
+  };
+  ai_success: boolean;
+  source: string;
 }

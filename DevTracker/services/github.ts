@@ -167,7 +167,7 @@ export async function fetchUserProfile(username: string, forceRefresh: boolean =
   if (!forceRefresh) {
     const cached = await getCachedUserProfile(username);
     if (cached) {
-      console.log('⚡ Using cached user profile');
+      console.log('⚡ Using permanently cached user profile');
       return cached;
     }
   }
@@ -182,7 +182,7 @@ export async function fetchUserProfile(username: string, forceRefresh: boolean =
   }
   
   const profile = await response.json();
-  await setCachedUserProfile(username, profile);
+  await setCachedUserProfile(username, profile); // always cache permanently
   console.log(`✅ User profile loaded: ${profile.name} (@${profile.login})`);
   
   return profile;
@@ -192,7 +192,7 @@ export async function fetchUserRepos(username: string, forceRefresh: boolean = f
   if (!forceRefresh) {
     const cached = await getCachedRepoData(username, 'all');
     if (cached && Array.isArray(cached)) {
-      console.log('⚡ Using cached repos');
+      console.log('⚡ Using permanently cached repos');
       return cached;
     }
   }
@@ -207,7 +207,7 @@ export async function fetchUserRepos(username: string, forceRefresh: boolean = f
     }
     
     const repos = await response.json();
-    await setCachedRepoData(username, 'all', repos, {}, null, 'all');
+    await setCachedRepoData(username, 'all', repos, {}, null, 'all'); // always cache permanently
     console.log(`✅ Found ${repos.length} repositories`);
     return repos;
   } catch (error) {

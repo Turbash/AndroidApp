@@ -7,8 +7,8 @@ import { ThemedView } from './ThemedView';
 interface CommitHealthProps {
   totalCommits: number;
   avgMessageLength: number;
-  commitFrequency: number; // commits per week
-  conventionalCommitRatio: number; // 0-1
+  commitFrequency: number; 
+  conventionalCommitRatio: number; 
 }
 
 export function CommitHealthSuggestions({ 
@@ -64,7 +64,6 @@ export function CommitHealthSuggestions({
     });
   }
   
-  // Add positive reinforcement if doing well
   if (suggestions.length === 0) {
     suggestions.push({
       icon: '🎉',

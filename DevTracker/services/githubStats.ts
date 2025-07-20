@@ -7,8 +7,7 @@ export interface GitHubStatsResponse {
 }
 
 export class GitHubStatsService {
-  
-  static async fetchGitHubStats(username: string, languageCount: number = 15): Promise<GitHubStatsResponse> {
+  static async fetchGitHubStats(username: string, languageCount: number = 15, forceRefresh: boolean = false): Promise<GitHubStatsResponse> {
     const normalizedUsername = username.toLowerCase();
     console.log(`📊 Fetching GitHub stats for ${normalizedUsername} (normalized from ${username}) with ${languageCount} languages`);
     
@@ -114,7 +113,6 @@ export class GitHubStatsService {
     console.log(`🔍 Validating GitHub username: ${username}`);
     
     try {
-      // Try the username as provided first
       let response = await fetch(`https://api.github.com/users/${username}`);
       
       if (response.ok) {
@@ -123,7 +121,6 @@ export class GitHubStatsService {
         return { exists: true, correctUsername: userData.login };
       }
       
-      // If that fails, try lowercase
       const lowercaseUsername = username.toLowerCase();
       if (lowercaseUsername !== username) {
         response = await fetch(`https://api.github.com/users/${lowercaseUsername}`);
@@ -179,3 +176,4 @@ export class GitHubStatsService {
     return validation.exists;
   }
 }
+
