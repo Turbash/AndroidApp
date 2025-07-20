@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { getCachedUserProfile, setCachedUserProfile, getCachedRepoData, setCachedRepoData } from '../utils/storage';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
@@ -161,8 +162,15 @@ async function fetchWithAuth(url: string, retries = 3, baseDelay = 1000): Promis
   throw new Error('Max retries exceeded');
 }
 
-export async function fetchUserProfile(username: string): Promise<GitHubUser> {
+export async function fetchUserProfile(username: string, forceRefresh: boolean = false): Promise<GitHubUser> {
   username = username.trim();
+  if (!forceRefresh) {
+    const cached = await getCachedUserProfile(username);
+    if (cached) {
+      console.log('⚡ Using cached user profile');
+      return cached;
+    }
+  }
   console.log(`👤 Fetching user profile for: ${username}`);
   console.log(`🔑 Token available for profile request: ${authToken ? 'Yes' : 'No'}`);
   
@@ -174,12 +182,20 @@ export async function fetchUserProfile(username: string): Promise<GitHubUser> {
   }
   
   const profile = await response.json();
+  await setCachedUserProfile(username, profile);
   console.log(`✅ User profile loaded: ${profile.name} (@${profile.login})`);
   
   return profile;
 }
 
-export async function fetchUserRepos(username: string): Promise<GitHubRepo[]> {
+export async function fetchUserRepos(username: string, forceRefresh: boolean = false): Promise<GitHubRepo[]> {
+  if (!forceRefresh) {
+    const cached = await getCachedRepoData(username, 'all');
+    if (cached && Array.isArray(cached)) {
+      console.log('⚡ Using cached repos');
+      return cached;
+    }
+  }
   console.log(`📁 Fetching repositories for: ${username}`);
   console.log(`🔑 Token available for repos request: ${authToken ? 'Yes' : 'No'}`);
   
@@ -191,8 +207,8 @@ export async function fetchUserRepos(username: string): Promise<GitHubRepo[]> {
     }
     
     const repos = await response.json();
+    await setCachedRepoData(username, 'all', repos, {}, null, 'all');
     console.log(`✅ Found ${repos.length} repositories`);
-    
     return repos;
   } catch (error) {
     console.error('💥 Error fetching repos:', error);
@@ -345,12 +361,10 @@ export class GitHubService {
     
     const allCommits: Record<string, GitHubCommit[]> = {};
     
-    // Process ALL repos, not just a subset
     const commitPromises = repos.map(async (repo) => {
       try {
         console.log(`📈 Fetching commits for ${repo.name}...`);
         
-        // Fetch more commits per repo (up to 100 per page)
         const commits = await this.getCommits(username, repo.name, 100);
         
         if (commits.length > 0) {
@@ -367,7 +381,6 @@ export class GitHubService {
       }
     });
     
-    // Wait for all commit fetches to complete
     const results = await Promise.all(commitPromises);
     
     const totalCommits = Object.values(allCommits).reduce((sum, commits) => sum + commits.length, 0);
@@ -391,12 +404,11 @@ export class GitHubService {
     perPage: number = 100
   ): Promise<GitHubCommit[]> {
     try {
-      // Fetch more commits by increasing per_page and adding pagination
       let allCommits: GitHubCommit[] = [];
       let page = 1;
       let hasMore = true;
       
-      while (hasMore && allCommits.length < 200) { // Limit to 200 commits per repo max
+      while (hasMore && allCommits.length < 200) { 
         const url = `https://api.github.com/repos/${username}/${repoName}/commits?per_page=${perPage}&page=${page}`;
         
         const response = await fetch(url, {
@@ -419,7 +431,6 @@ export class GitHubService {
           allCommits = allCommits.concat(commits);
           page++;
           
-          // Stop if we got less than requested (last page)
           if (commits.length < perPage) {
             hasMore = false;
           }

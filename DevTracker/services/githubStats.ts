@@ -9,11 +9,9 @@ export interface GitHubStatsResponse {
 export class GitHubStatsService {
   
   static async fetchGitHubStats(username: string, languageCount: number = 15): Promise<GitHubStatsResponse> {
-    // Normalize username to lowercase for consistency
     const normalizedUsername = username.toLowerCase();
     console.log(`📊 Fetching GitHub stats for ${normalizedUsername} (normalized from ${username}) with ${languageCount} languages`);
     
-    // Try different approaches to get React Native compatible images
     const statsUrl = `https://github-readme-stats.vercel.app/api?username=${normalizedUsername}&show_icons=true&count_private=true&include_all_commits=true&theme=dark&hide_border=true&bg_color=0d1117`;
     const languagesUrl = `https://github-readme-stats.vercel.app/api/top-langs/?username=${normalizedUsername}&layout=compact&langs_count=${languageCount}&theme=dark&hide_border=true&bg_color=0d1117`;
     
@@ -21,7 +19,6 @@ export class GitHubStatsService {
       console.log('🔗 Stats URL:', statsUrl);
       console.log('🔗 Languages URL:', languagesUrl);
       
-      // First, validate that the user exists with the correct case
       const userValidation = await this.validateAndGetCorrectUsername(username);
       if (!userValidation.exists) {
         return {
@@ -32,7 +29,6 @@ export class GitHubStatsService {
         };
       }
       
-      // Use the correct case username for the final URLs
       const correctUsername = userValidation.correctUsername;
       const finalStatsUrl = statsUrl.replace(normalizedUsername, correctUsername);
       const finalLanguagesUrl = languagesUrl.replace(normalizedUsername, correctUsername);
@@ -139,7 +135,6 @@ export class GitHubStatsService {
         }
       }
       
-      // If that fails, try with first letter capitalized
       const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
       if (capitalizedUsername !== username && capitalizedUsername !== lowercaseUsername) {
         response = await fetch(`https://api.github.com/users/${capitalizedUsername}`);
@@ -161,7 +156,6 @@ export class GitHubStatsService {
   }
   
   static getWebViewUrls(username: string, languageCount: number = 15) {
-    // Return HTML wrapper URLs that can be displayed in WebView
     return {
       statsWebView: `data:text/html;charset=utf-8,<html><body style="margin:0;padding:0;background:transparent;"><img src="https://github-readme-stats.vercel.app/api?username=${username}&show_icons=true&count_private=true&include_all_commits=true&theme=transparent&hide_border=true&bg_color=00000000" style="width:100%;height:auto;" /></body></html>`,
       languagesWebView: `data:text/html;charset=utf-8,<html><body style="margin:0;padding:0;background:transparent;"><img src="https://github-readme-stats.vercel.app/api/top-langs/?username=${username}&layout=compact&langs_count=${languageCount}&theme=transparent&hide_border=true&bg_color=00000000" style="width:100%;height:auto;" /></body></html>`
@@ -169,18 +163,13 @@ export class GitHubStatsService {
   }
   
   static getAlternativeImageUrls(username: string, languageCount: number = 15) {
-    // Try different services that might return PNG
     return {
-      // GitHub Profile Summary Cards (returns PNG)
       profileSummary: `https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=${username}&theme=transparent`,
       
-      // GitHub Streak Stats (supports PNG)
       streakStats: `https://github-readme-streak-stats.herokuapp.com/?user=${username}&theme=transparent&hide_border=true&background=00000000`,
       
-      // Activity Graph
       activityGraph: `https://github-readme-activity-graph.vercel.app/graph?username=${username}&theme=transparent&hide_border=true&bg_color=00000000`,
       
-      // Profile Trophy
       trophyStats: `https://github-profile-trophy.vercel.app/?username=${username}&theme=transparent&no-frame=true&no-bg=true&margin-w=4&row=2&column=3`,
     };
   }

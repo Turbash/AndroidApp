@@ -43,4 +43,4 @@ Beginner-friendly logic: no backend, no auth, just pure focus on local app build
 - Only CRUD (Create, Read, Update, Delete) features
 - Clean UI with simple React Native layouting
 
-**You’ll learn:** useState, useEffect, FlatList, TextInput, AsyncStorage, navigation
+**I’ll learn:**FlatList, TextInput, AsyncStorage, navigation
