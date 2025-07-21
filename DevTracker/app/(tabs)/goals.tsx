@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 interface Goal {
   id: string;
@@ -12,16 +16,42 @@ interface Goal {
   progressNotes: string[];
 }
 
+const GOALS_STORAGE_KEY = 'DEVTRACKER_GOALS';
+
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [adding, setAdding] = useState(false);
+  const accentColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'text');
+  const router = useRouter();
+
+  useEffect(() => {
+    loadGoals();
+  }, []);
+
+  const loadGoals = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+      if (stored) setGoals(JSON.parse(stored));
+    } catch (e) {
+      console.error('Failed to load goals:', e);
+    }
+  };
+
+  const saveGoals = async (newGoals: Goal[]) => {
+    setGoals(newGoals);
+    try {
+      await AsyncStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(newGoals));
+    } catch (e) {
+      console.error('Failed to save goals:', e);
+    }
+  };
 
   const handleAddGoal = () => {
     if (!title.trim()) return;
-    setGoals([
+    const newGoals = [
       ...goals,
       {
         id: Date.now().toString(),
@@ -31,15 +61,48 @@ export default function GoalsScreen() {
         completed: false,
         progressNotes: [],
       },
-    ]);
+    ];
+    saveGoals(newGoals);
     setTitle('');
     setDescription('');
     setCategory('');
     setAdding(false);
   };
 
+  const toggleGoalCompleted = (id: string) => {
+    const newGoals = goals.map(goal =>
+      goal.id === id ? { ...goal, completed: !goal.completed } : goal
+    );
+    saveGoals(newGoals);
+  };
+
+  const deleteGoal = (id: string) => {
+    Alert.alert(
+      'Delete Goal',
+      'Are you sure you want to delete this goal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const newGoals = goals.filter(goal => goal.id !== id);
+            saveGoals(newGoals);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleGoalPress = (goal: Goal) => {
+    router.push({
+      pathname: '/goal-details',
+      params: { goalId: goal.id }
+    });
+  };
+
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ThemedText type="title" style={styles.header}>🎯 Your Goals</ThemedText>
       <TouchableOpacity style={styles.addButton} onPress={() => setAdding(!adding)}>
         <ThemedText style={styles.addButtonText}>{adding ? 'Cancel' : '➕ Add Goal'}</ThemedText>
@@ -74,18 +137,29 @@ export default function GoalsScreen() {
           <ThemedText style={styles.emptyState}>No goals yet. Add one to get started!</ThemedText>
         )}
         {goals.map(goal => (
-          <ThemedView key={goal.id} style={styles.goalCard}>
-            <ThemedText style={styles.goalTitle}>{goal.title}</ThemedText>
-            <ThemedText style={styles.goalCategory}>{goal.category}</ThemedText>
-            <ThemedText style={styles.goalDescription}>{goal.description}</ThemedText>
-            <ThemedText style={styles.goalStatus}>
-              Status: {goal.completed ? '✅ Completed' : '⏳ In Progress'}
-            </ThemedText>
-            {/* Advice and progress UI can be added here */}
-          </ThemedView>
+          <TouchableOpacity key={goal.id} onPress={() => handleGoalPress(goal)}>
+            <ThemedView style={styles.goalCard}>
+              <View style={styles.goalHeader}>
+                <TouchableOpacity onPress={() => toggleGoalCompleted(goal.id)}>
+                  <ThemedText style={styles.goalStatus}>
+                    {goal.completed ? '✅' : '⬜️'}
+                  </ThemedText>
+                </TouchableOpacity>
+                <ThemedText style={styles.goalTitle}>{goal.title}</ThemedText>
+                <TouchableOpacity onPress={() => deleteGoal(goal.id)}>
+                  <ThemedText style={styles.deleteButton}>🗑️</ThemedText>
+                </TouchableOpacity>
+              </View>
+              <ThemedText style={styles.goalCategory}>{goal.category}</ThemedText>
+              <ThemedText style={styles.goalDescription}>{goal.description}</ThemedText>
+              <ThemedText style={styles.goalStatusText}>
+                Status: {goal.completed ? '✅ Completed' : '⏳ In Progress'}
+              </ThemedText>
+            </ThemedView>
+          </TouchableOpacity>
         ))}
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
@@ -146,23 +220,41 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 14,
   },
-  goalTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
+  goalTitle: {
+    color:'#000000',
+    fontWeight: 'bold',
+    fontSize: 16,
+    flex: 1,
+    marginLeft: 8,
+  },
   goalCategory: {
+    color: '#000000',
     fontSize: 13,
     opacity: 0.7,
     marginBottom: 4,
   },
   goalDescription: {
+    color: '#000000',
     fontSize: 14,
     marginBottom: 6,
   },
   goalStatus: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  goalStatusText: {
     fontSize: 13,
     marginTop: 4,
     color: '#007AFF',
+  },
+  deleteButton: {
+    fontSize: 18,
+    marginLeft: 8,
+    color: '#ef4444',
   },
 });

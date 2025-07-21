@@ -17,7 +17,7 @@ app = FastAPI(title="DevTracker API", description="Learning Progress Tracker API
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,6 +112,17 @@ class RepoAnalysisResponse(BaseModel):
     recommendations: List[str]
     ai_success: bool = True
     source: str = "ai"
+
+class GoalAnalysisRequest(BaseModel):
+    username: str
+    goal: dict
+    github_data: dict
+
+class GoalAnalysisResponse(BaseModel):
+    suggestions: List[str]
+    next_steps: List[str]
+    estimated_time: str
+    resources: List[str]
 
 def analyze_learning_progress(goal_title: str, category: str, progress: str, difficulty: int) -> dict:
     """Analyze learning progress and provide AI suggestions"""
@@ -470,6 +481,68 @@ def analyze_repo_profile(data: RepoAnalysisRequest) -> dict:
         "source": "fallback"
     }
 
+def analyze_goal_structured(goal_data: dict, github_data: dict, username: str) -> dict:
+    """
+    Analyze a user's goal in the context of their GitHub data and provide AI suggestions.
+    """
+    try:
+        progress_str = "\n".join(goal_data.get("progress", [])) if goal_data.get("progress") else "No progress yet"
+        prompt = f"""
+You are an AI mentor for developers. The user below has a specific coding goal. 
+First, analyze the goal and user's progress. Then, use their GitHub data to tailor your advice.
+
+Goal Information:
+- Title: {goal_data.get("title")}
+- Description: {goal_data.get("description")}
+- Category: {goal_data.get("category")}
+- Completed: {goal_data.get("completed")}
+- Progress Notes: {progress_str}
+
+GitHub Data (raw, for context):
+- Username: {username}
+- Public Repos: {len(github_data.get("public_repos", []))}
+- Profile README: {github_data.get("profile_readme")[:200] if github_data.get("profile_readme") else "None"}
+- Repo Summaries: {[{"name": r.get("name"), "desc": r.get("description")} for r in github_data.get("public_repos", [])][:3]}
+- Languages Used: {', '.join(set(lang for repo in github_data.get("public_repos", []) for lang in (repo.get("languages") or {}).keys()))}
+
+Instructions:
+1. Give practical, actionable suggestions for the user to achieve their goal, considering their progress and actual GitHub activity.
+2. Be specific and reference their real coding work if possible.
+3. Respond in this JSON format:
+{{
+  "suggestions": ["suggestion1", "suggestion2"],
+  "next_steps": ["step1", "step2"],
+  "estimated_time": "X weeks/days",
+  "resources": ["resource1", "resource2"]
+}}
+"""
+        response = g4f_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=700,
+            temperature=0.7
+        )
+        if response and response.choices:
+            content = response.choices[0].message.content
+            try:
+                if '{' in content and '}' in content:
+                    json_start = content.find('{')
+                    json_end = content.rfind('}') + 1
+                    return json.loads(content[json_start:json_end])
+            except Exception as parse_error:
+                logger.warning(f"Goal JSON parsing failed: {parse_error}")
+        logger.warning("Goal AI response missing or invalid, using fallback.")
+    except Exception as e:
+        logger.error(f"Goal analysis error: {str(e)}")
+        logger.warning("Goal AI analysis failed, using fallback.")
+
+    return {
+        "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
+        "next_steps": ["Review fundamentals", "Build a small project"],
+        "estimated_time": "Varies based on complexity",
+        "resources": ["Documentation", "Online tutorials"]
+    }
+
 @app.post("/analyze-dev-profile", response_model=DevAnalysisResponse)
 async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
     """Single comprehensive analysis of developer's GitHub profile"""
@@ -630,4 +703,36 @@ async def analyze_github_endpoint(request: GitHubAnalysisRequest):
             project_insights=["Build more projects to showcase skills"],
             recommended_goals=[{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
             coding_patterns={"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
+        )
+
+@app.post("/analyze-goal", response_model=GoalAnalysisResponse)
+async def analyze_goal_structured_endpoint(request: GoalAnalysisRequest):
+    """Goal-based insights endpoint (structured, with github data)"""
+    try:
+        loop = asyncio.get_event_loop()
+        analysis = await loop.run_in_executor(
+            executor,
+            analyze_goal_structured,
+            request.goal,
+            request.github_data,
+            request.username
+        )
+        if not analysis or not isinstance(analysis, dict) or "suggestions" not in analysis:
+            logger.warning("Goal analysis dict missing or invalid, using fallback.")
+            analysis = {
+                "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
+                "next_steps": ["Review fundamentals", "Build a small project"],
+                "estimated_time": "Varies based on complexity",
+                "resources": ["Documentation", "Online tutorials"]
+            }
+        logger.info(f"Final GoalAnalysisResponse: {analysis}")
+        return GoalAnalysisResponse(**analysis)
+    except Exception as e:
+        logger.error(f"Goal analysis error: {str(e)}")
+        logger.warning("Exception in goal endpoint, using fallback.")
+        return GoalAnalysisResponse(
+            suggestions=["Keep practicing consistently", "Break complex topics into smaller parts"],
+            next_steps=["Review fundamentals", "Build a small project"],
+            estimated_time="Varies based on complexity",
+            resources=["Documentation", "Online tutorials"]
         )

@@ -82,7 +82,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ThemedText type="title" style={styles.header}>👤 Your Profile</ThemedText>
         <ThemedText style={styles.debugText}>
           Username: {githubUsername || 'None'} | Profile: {userProfile ? 'Loaded' : 'Missing'}
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
         >
           <ThemedText style={styles.settingsButtonText}>⚙️ Settings</ThemedText>
         </TouchableOpacity>
-      </ThemedView>
+      </SafeAreaView>
     </ScrollView>
   );
 }

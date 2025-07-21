@@ -13,17 +13,17 @@ export default function TabLayout() {
       <Tab.Screen
         name="index"
         component={DashboardScreen}
-        options={{ title: 'Home', tabBarIcon: () => <ThemedText>🏠</ThemedText> }}
+        options={{ title: 'Home', headerShown: false, tabBarIcon: () => <ThemedText>🏠</ThemedText> }}
       />
       <Tab.Screen
         name="goals"
         component={GoalsScreen}
-        options={{ title: 'Goals', tabBarIcon: () => <ThemedText>🎯</ThemedText> }}
+        options={{ title: 'Goals', headerShown: false, tabBarIcon: () => <ThemedText>🎯</ThemedText> }}
       />
       <Tab.Screen
         name="profile"
         component={ProfileScreen}
-        options={{ title: 'Profile', tabBarIcon: () => <ThemedText>👤</ThemedText> }}
+        options={{ title: 'Profile', headerShown: false, tabBarIcon: () => <ThemedText>👤</ThemedText> }}
       />
     </Tab.Navigator>
   );

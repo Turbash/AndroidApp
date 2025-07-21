@@ -35,6 +35,9 @@
         }
       ]
     ],
+    "extra": {
+      "projectID": "0df4a328-31d0-4244-ba05-5a0eee50ed71"
+    },
     "experiments": {
       "typedRoutes": true
     }

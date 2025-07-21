@@ -37,7 +37,10 @@ export default {
     },
     extra: {
       githubToken: process.env.GITHUB_TOKEN,
-      huggingfaceToken: process.env.HUGGINGFACE_TOKEN
+      huggingfaceToken: process.env.HUGGINGFACE_TOKEN,
+      eas:{
+        projectID: "0df4a328-31d0-4244-ba05-5a0eee50ed71"
+      }
     }
   }
 };
