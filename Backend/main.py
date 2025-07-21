@@ -488,27 +488,34 @@ def analyze_goal_structured(goal_data: dict, github_data: dict, username: str) -
     try:
         progress_str = "\n".join(goal_data.get("progress", [])) if goal_data.get("progress") else "No progress yet"
         prompt = f"""
-You are an AI mentor for developers. The user below has a specific coding goal. 
-First, analyze the goal and user's progress. Then, use their GitHub data to tailor your advice.
+You are an expert AI mentor for developers. The user below has a specific coding goal.
 
-Goal Information:
+First, analyze the user's goal and their progress so far.
+Then, use their real GitHub data to tailor your advice and suggestions.
+
+---
+GOAL INFORMATION:
 - Title: {goal_data.get("title")}
 - Description: {goal_data.get("description")}
 - Category: {goal_data.get("category")}
 - Completed: {goal_data.get("completed")}
-- Progress Notes: {progress_str}
+- Progress Notes:
+{progress_str}
 
-GitHub Data (raw, for context):
+---
+GITHUB DATA (for context, use to personalize advice):
 - Username: {username}
-- Public Repos: {len(github_data.get("public_repos", []))}
-- Profile README: {github_data.get("profile_readme")[:200] if github_data.get("profile_readme") else "None"}
-- Repo Summaries: {[{"name": r.get("name"), "desc": r.get("description")} for r in github_data.get("public_repos", [])][:3]}
-- Languages Used: {', '.join(set(lang for repo in github_data.get("public_repos", []) for lang in (repo.get("languages") or {}).keys()))}
+- Number of Public Repos: {len(github_data.get("public_repos", []))}
+- Profile README (first 200 chars): {github_data.get("profile_readme")[:200] if github_data.get("profile_readme") else "None"}
+- Example Repo Summaries: {[{"name": r.get("name"), "desc": r.get("description")} for r in github_data.get("public_repos", [])][:3]}
+- Languages Used: {', '.join(sorted(set(lang for repo in github_data.get("public_repos", []) for lang in (repo.get("languages") or {}).keys())))}
 
-Instructions:
+---
+INSTRUCTIONS:
 1. Give practical, actionable suggestions for the user to achieve their goal, considering their progress and actual GitHub activity.
-2. Be specific and reference their real coding work if possible.
-3. Respond in this JSON format:
+2. Reference their real coding work, languages, and repos if possible.
+3. If the goal is already completed, congratulate the user and suggest next-level goals.
+4. Respond ONLY in this JSON format:
 {{
   "suggestions": ["suggestion1", "suggestion2"],
   "next_steps": ["step1", "step2"],
