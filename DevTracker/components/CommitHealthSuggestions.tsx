@@ -5,7 +5,7 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
 interface CommitHealthProps {
-  totalCommits: number;
+  totalCommits: number; 
   avgMessageLength: number;
   commitFrequency: number; 
   conventionalCommitRatio: number; 
@@ -23,7 +23,6 @@ export function CommitHealthSuggestions({
   
   const suggestions = [];
   
-  // Analyze commit health and generate suggestions
   if (totalCommits < 50) {
     suggestions.push({
       icon: '🚀',

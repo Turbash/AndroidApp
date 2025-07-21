@@ -125,3 +125,15 @@ export interface AIAnalysisResult {
   ai_success: boolean;
   source: string;
 }
+
+export interface RepoAnalysisResponse {
+  summary: string;
+  strengths: string[];
+  improvement_areas: string[];
+  code_quality_score: number;
+  popularity_score: number;
+  documentation_score: number;
+  recommendations: string[];
+  ai_success: boolean;
+  source: string;
+}

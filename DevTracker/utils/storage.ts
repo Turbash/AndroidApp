@@ -20,7 +20,6 @@ interface RepoCache {
   commits: any[];
   languages: Record<string, number>;
   readme: string | null;
-  projectType: string;
   timestamp: number;
 }
 
@@ -91,8 +90,7 @@ export async function setCachedRepoData(
   repoName: string, 
   commits: any[], 
   languages: Record<string, number>, 
-  readme: string | null, 
-  projectType: string
+  readme: string | null
 ): Promise<void> {
   try {
     const cacheKey = `${REPO_CACHE_KEY}_${username}_${repoName}`;
@@ -102,7 +100,6 @@ export async function setCachedRepoData(
       commits,
       languages,
       readme,
-      projectType,
       timestamp: Date.now()
     };
     await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
@@ -112,7 +109,6 @@ export async function setCachedRepoData(
   }
 }
 
-// Cache user profile separately
 export async function setCachedUserProfile(username: string, profile: GitHubUser): Promise<void> {
   try {
     const cacheKey = `user_profile_${username}`;
@@ -136,7 +132,6 @@ export async function getCachedUserProfile(username: string): Promise<GitHubUser
       const { profile, timestamp } = JSON.parse(cached);
       const cacheAge = Date.now() - new Date(timestamp).getTime();
       
-      // Profile cache valid for 1 hour
       if (cacheAge < 60 * 60 * 1000) {
         console.log('👤 Using cached user profile');
         return profile;
@@ -150,7 +145,6 @@ export async function getCachedUserProfile(username: string): Promise<GitHubUser
   }
 }
 
-// Cache ML insights separately
 export async function setCachedMLInsights(username: string, insights: MLDeveloperInsights): Promise<void> {
   try {
     const cacheKey = `ml_insights_${username}`;
@@ -174,7 +168,6 @@ export async function getCachedMLInsights(username: string): Promise<MLDeveloper
       const { insights, timestamp } = JSON.parse(cached);
       const cacheAge = Date.now() - new Date(timestamp).getTime();
       
-      // ML insights cache valid for 30 minutes
       if (cacheAge < 30 * 60 * 1000) {
         console.log('🧠 Using cached ML insights');
         return insights;
@@ -188,7 +181,6 @@ export async function getCachedMLInsights(username: string): Promise<MLDeveloper
   }
 }
 
-// Clear specific cache types
 export async function clearMLInsightsCache(username: string): Promise<void> {
   try {
     const cacheKey = `ml_insights_${username}`;

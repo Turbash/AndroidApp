@@ -13,9 +13,10 @@ import {
 } from '../services/github';
 import { MLAnalytics, MLDeveloperInsights as MLInsightsType } from '../services/mlAnalytics';
 import { clearMLInsightsCache, getCachedGitHubData, getCachedMLInsights, getCachedUserProfile, setCachedGitHubData, setCachedUserProfile } from '../utils/storage';
-import { MLDeveloperInsights } from './MLDeveloperInsights';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
+import { MLInsightsTab } from './MLInsightsTab';
+import { RepoTabContent } from './RepoTabContent';
 
 interface GitHubDashboardProps {
   username: string;
@@ -284,7 +285,6 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Debug Info */}
       <ThemedText style={styles.debugText}>
         User: {user?.login || 'None'} | Repos: {repos.length} | Tab: {activeTab} | ML: {mlInsights ? 'Ready' : 'Loading'}
       </ThemedText>
@@ -293,10 +293,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
       <ThemedView style={[styles.tabContainer, { backgroundColor: tabBg }]}>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'repos' && styles.activeTab]}
-          onPress={() => {
-            console.log('📁 Switching to repos tab');
-            setActiveTab('repos');
-          }}
+          onPress={() => setActiveTab('repos')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'repos' && styles.activeTabText]}>
             📁 Repositories ({repos.length})
@@ -304,10 +301,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'insights' && styles.activeTab]}
-          onPress={() => {
-            console.log('🧠 Switching to insights tab');
-            setActiveTab('insights');
-          }}
+          onPress={() => setActiveTab('insights')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'insights' && styles.activeTabText]}>
             🤖 ML Insights
@@ -317,96 +311,26 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 
       {/* Content based on active tab */}
       {activeTab === 'repos' ? (
-        <ThemedView style={styles.reposContainer}>
-          {/* User Profile */}
-          {user && (
-            <ThemedView style={[styles.userContainer, { backgroundColor: cardBg }]}>
-              <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-              <ThemedView style={styles.userInfo}>
-                <ThemedText type="subtitle">{user.name || user.login}</ThemedText>
-                <ThemedText>@{user.login}</ThemedText>
-                <ThemedText>{user.public_repos} public repos</ThemedText>
-                {lastFetched && (
-                  <ThemedText style={[styles.cacheInfo, { color: subtleTextColor }]}>
-                    Updated: {lastFetched.toLocaleTimeString()}
-                  </ThemedText>
-                )}
-              </ThemedView>
-              <TouchableOpacity onPress={refreshData} style={styles.refreshButton}>
-                <ThemedText style={{ color: subtleTextColor }}>🔄</ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-          )}
-
-          {/* NO GITHUB STATS HERE - ONLY IN PROFILE TAB */}
-
-          {/* Recent Repos */}
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Recent Repositories ({repos.length})
-          </ThemedText>
-          
-          <ScrollView style={styles.reposList} showsVerticalScrollIndicator={false}>
-            {repos.length > 0 ? (
-              repos.slice(0, 15).map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  onPress={() => router.push({ pathname: '/repo-details', params: { repoName: item.name } })}
-                >
-                  <ThemedView style={[styles.repoItem, { backgroundColor: repoItemBg }]}>
-                    <ThemedText style={styles.repoName}>{item.name}</ThemedText>
-                    <ThemedText style={[styles.repoLanguage, { color: subtleTextColor }]}>
-                      {item.language || 'No language'}
-                    </ThemedText>
-                    {projectTypes[item.name] && (
-                      <ThemedText style={[styles.projectType, { color: subtleTextColor }]}>
-                        📁 {projectTypes[item.name]}
-                      </ThemedText>
-                    )}
-                    <ThemedText style={styles.repoDescription} numberOfLines={2}>
-                      {item.description || 'No description'}
-                    </ThemedText>
-                    <ThemedText style={[styles.repoDate, { color: dateTextColor }]}>
-                      Updated: {new Date(item.updated_at).toLocaleDateString()}
-                    </ThemedText>
-                  </ThemedView>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <ThemedText style={styles.emptyState}>
-                {loading ? 'Loading repositories...' : 'No repositories found.'}
-              </ThemedText>
-            )}
-          </ScrollView>
-        </ThemedView>
+        <RepoTabContent
+          user={user}
+          repos={repos}
+          lastFetched={lastFetched}
+          projectTypes={projectTypes}
+          loading={loading}
+          cardBg={cardBg}
+          repoItemBg={repoItemBg}
+          subtleTextColor={subtleTextColor}
+          dateTextColor={dateTextColor}
+          refreshData={refreshData}
+        />
       ) : (
-        <ThemedView style={styles.insightsContainer}>
-          {mlInsights ? (
-            <>
-              <ThemedView style={styles.refreshButtonsContainer}>
-                <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.fastRefreshButton}>
-                  <ThemedText style={styles.refreshButtonText}>🧠 Refresh Insights</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={refreshGitHubDataOnly} style={styles.fastRefreshButton}>
-                  <ThemedText style={styles.refreshButtonText}>📡 Refresh Data</ThemedText>
-                </TouchableOpacity>
-              </ThemedView>
-              {/* NO GITHUB STATS HERE - ONLY IN REPOS TAB */}
-              <MLDeveloperInsights insights={mlInsights} username={username} />
-            </>
-          ) : (
-            <ThemedView style={styles.loadingContainer}>
-              <ThemedText>🤖 Generating ML insights...</ThemedText>
-              <ThemedText style={styles.loadingSubtext}>
-                Using parallel processing for faster analysis
-              </ThemedText>
-              {!loading && (
-                <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.retryButton}>
-                  <ThemedText style={{ color: 'white' }}>Generate Insights</ThemedText>
-                </TouchableOpacity>
-              )}
-            </ThemedView>
-          )}
-        </ThemedView>
+        <MLInsightsTab
+          mlInsights={mlInsights}
+          username={username}
+          loading={loading}
+          refreshMLInsightsOnly={refreshMLInsightsOnly}
+          refreshGitHubDataOnly={refreshGitHubDataOnly}
+        />
       )}
     </ThemedView>
   );

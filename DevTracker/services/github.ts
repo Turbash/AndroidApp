@@ -207,7 +207,7 @@ export async function fetchUserRepos(username: string, forceRefresh: boolean = f
     }
     
     const repos = await response.json();
-    await setCachedRepoData(username, 'all', repos, {}, null, 'all'); // always cache permanently
+    await setCachedRepoData(username, 'all', repos, {}, null);
     console.log(`✅ Found ${repos.length} repositories`);
     return repos;
   } catch (error) {
@@ -324,32 +324,6 @@ export async function fetchRepoReadme(username: string, repoName: string): Promi
     console.error(`💥 Error fetching README for ${repoName}:`, error);
     return null;
   }
-}
-
-export async function analyzeProjectType(readmeContent: string): Promise<string> {
-  console.log(`🔍 Analyzing project type from README (${readmeContent.length} chars)`);
-  
-  const content = readmeContent.toLowerCase();
-  let projectType = 'General Project';
-  
-  if (content.includes('react') || content.includes('jsx') || content.includes('next.js')) {
-    projectType = 'React/Frontend Project';
-  } else if (content.includes('python') || content.includes('django') || content.includes('flask')) {
-    projectType = 'Python Project';
-  } else if (content.includes('node.js') || content.includes('express') || content.includes('api')) {
-    projectType = 'Backend/API Project';
-  } else if (content.includes('machine learning') || content.includes('ml') || content.includes('tensorflow')) {
-    projectType = 'Machine Learning Project';
-  } else if (content.includes('mobile') || content.includes('android') || content.includes('ios')) {
-    projectType = 'Mobile App Project';
-  } else if (content.includes('game') || content.includes('unity') || content.includes('pygame')) {
-    projectType = 'Game Development';
-  } else if (content.includes('data') || content.includes('analysis') || content.includes('visualization')) {
-    projectType = 'Data Science Project';
-  }
-  
-  console.log(`🏷️ Project type determined: ${projectType}`);
-  return projectType;
 }
 
 export class GitHubService {

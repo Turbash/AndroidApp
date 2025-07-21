@@ -6,18 +6,28 @@ import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
-import { analyzeProjectType, fetchRepoCommits, fetchRepoLanguages, fetchRepoReadme, GitHubCommit } from '../services/github';
+import { fetchRepoCommits, fetchRepoLanguages, fetchRepoReadme } from '../services/github';
+import { GitHubCommit } from '../services/github';
+import { RepoAnalysisResponse } from '../services/mlModels';
 import { getCachedRepoData, getGitHubUsername, setCachedRepoData } from '../utils/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { InfoCard } from '../components/InfoCard';
+import { RepoLanguages } from '../components/RepoLanguages';
+import { RepoReadmePreview } from '../components/RepoReadmePreview';
+import { RepoCommitsList } from '../components/RepoCommitsList';
+import { RepoAnalysisDisplay } from '../components/RepoAnalysisDisplay';
 
 export default function RepoDetailsScreen() {
   const { repoName } = useLocalSearchParams<{ repoName: string }>();
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [languages, setLanguages] = useState<Record<string, number>>({});
   const [readme, setReadme] = useState<string | null>(null);
-  const [projectType, setProjectType] = useState<string>('Unknown');
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<RepoAnalysisResponse | null>(null);
 
   const colorScheme = useColorScheme();
   const cardBg = useThemeColor({ light: '#f9f9f9', dark: '#333' }, 'background');
@@ -27,7 +37,6 @@ export default function RepoDetailsScreen() {
     console.log('RepoDetailsScreen mounted with repoName:', repoName);
     loadRepoData();
   }, [repoName]);
-
   const loadRepoData = async () => {
     try {
       setError(null);
@@ -47,7 +56,6 @@ export default function RepoDetailsScreen() {
         setCommits(cached.commits);
         setLanguages(cached.languages);
         setReadme(cached.readme);
-        setProjectType(cached.projectType);
         setLoading(false);
         return;
       }
@@ -62,18 +70,11 @@ export default function RepoDetailsScreen() {
       
       const readmeContent = await fetchRepoReadme(githubUsername, repoName as string);
       
-      let projectTypeResult = 'Unknown';
-      if (readmeContent) {
-        projectTypeResult = await analyzeProjectType(readmeContent);
-      }
-      
       setCommits(repoCommits);
       setLanguages(repoLanguages);
       setReadme(readmeContent);
-      setProjectType(projectTypeResult);
       
-      // Cache the results
-      await setCachedRepoData(githubUsername, repoName as string, repoCommits, repoLanguages, readmeContent, projectTypeResult);
+      await setCachedRepoData(githubUsername, repoName as string, repoCommits, repoLanguages, readmeContent /* removed projectType */);
       
       console.log('✅ Repo data loading complete');
     } catch (error) {
@@ -84,102 +85,136 @@ export default function RepoDetailsScreen() {
     }
   };
 
+  const handleAnalyseRepo = async () => {
+    setAnalysisLoading(true);
+    setShowAnalysis(true);
+    setAnalysis(null);
+
+    try {
+      const [commitsData, languagesData, readmeData] = await Promise.all([
+        fetchRepoCommits(username, repoName as string),
+        fetchRepoLanguages(username, repoName as string),
+        fetchRepoReadme(username, repoName as string)
+      ]);
+      const payload = {
+        username,
+        repo_name: repoName,
+        readme_content: readmeData,
+        commit_messages: Array.isArray(commitsData) ? commitsData.map((c: any) => c.commit?.message || '') : [],
+        repo_languages: languagesData,
+      };
+      const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const url = `${BACKEND_URL}/analyze-repo`;
+      console.log('[RepoDetails] Sending repo analysis request:', payload);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        setAnalysis(data);
+        console.log('[RepoDetails] Analysis response:', data);
+      } catch (err) {
+        setAnalysis(null);
+        console.error('[RepoDetails] Failed to parse analysis JSON:', text);
+      }
+    } catch (err) {
+      setAnalysis(null);
+      console.error('[RepoDetails] Error during repo analysis:', err);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   const totalBytes = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
 
   if (loading) {
     return (
-      <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ThemedText>Loading repository data...</ThemedText>
         <ThemedText style={{ marginTop: 8, fontSize: 14, opacity: 0.7 }}>
           Repository: {repoName}
         </ThemedText>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ThemedText type="title">Error</ThemedText>
         <ThemedText style={{ marginVertical: 16 }}>{error}</ThemedText>
         <Button title="Retry" onPress={loadRepoData} />
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ThemedText type="title">{repoName}</ThemedText>
-        
-        {projectType !== 'Unknown' && (
-          <ThemedView style={[styles.projectTypeContainer, { backgroundColor: cardBg }]}>
-            <ThemedText type="defaultSemiBold">Project Type: {projectType}</ThemedText>
-          </ThemedView>
-        )}
         
         <Button 
           title="View on GitHub" 
           onPress={() => openBrowserAsync(`https://github.com/${username}/${repoName}`)}
         />
 
+        {/* Analyse Repo Button */}
+        {!showAnalysis && (
+          <Button
+            title="🔎 Analyse This Repo"
+            onPress={handleAnalyseRepo}
+            disabled={analysisLoading}
+          />
+        )}
+
+        {/* Repo Analysis Display */}
+        {showAnalysis && (
+          <ThemedView style={{ marginTop: 20 }}>
+            {analysisLoading ? (
+              <ThemedText>Analysing repo...</ThemedText>
+            ) : analysis ? (
+              <RepoAnalysisDisplay analysis={analysis} />
+            ) : (
+              <ThemedText>Failed to load analysis.</ThemedText>
+            )}
+            <Button title="Close Analysis" onPress={() => setShowAnalysis(false)} />
+          </ThemedView>
+        )}
+
         {/* Languages */}
-        {Object.keys(languages).length > 0 && (
+        {!showAnalysis && Object.keys(languages).length > 0 && (
           <>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               Languages Used
             </ThemedText>
-            <ThemedView style={[styles.languagesContainer, { backgroundColor: cardBg }]}>
-              {Object.entries(languages).map(([lang, bytes]) => (
-                <ThemedView key={lang} style={styles.languageItem}>
-                  <ThemedText>{lang}</ThemedText>
-                  <ThemedText style={{ color: subtleTextColor }}>
-                    {Math.round((bytes / totalBytes) * 100)}%
-                  </ThemedText>
-                </ThemedView>
-              ))}
-            </ThemedView>
+            <RepoLanguages languages={languages} totalBytes={totalBytes} subtleTextColor={subtleTextColor} />
           </>
         )}
 
         {/* README Preview */}
-        {readme && (
+        {!showAnalysis && readme && (
           <>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               README Preview
             </ThemedText>
-            <ThemedView style={[styles.readmeContainer, { backgroundColor: cardBg }]}>
-              <ThemedText style={styles.readmeText}>
-                {readme.substring(0, 500)}...
-              </ThemedText>
-            </ThemedView>
+            <RepoReadmePreview readme={readme} />
           </>
         )}
 
         {/* Recent Commits */}
-        {commits.length > 0 && (
+        {!showAnalysis && commits.length > 0 && (
           <>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               Recent Commits ({commits.length})
             </ThemedText>
-            {commits.map((item) => (
-              <TouchableOpacity key={item.sha} onPress={() => openBrowserAsync(item.html_url)}>
-                <ThemedView style={[styles.commitItem, { backgroundColor: cardBg }]}>
-                  <ThemedText style={styles.commitMessage} numberOfLines={2}>
-                    {item.commit.message}
-                  </ThemedText>
-                  <ThemedText style={[styles.commitAuthor, { color: subtleTextColor }]}>
-                    {item.commit.author.name}
-                  </ThemedText>
-                  <ThemedText style={[styles.commitDate, { color: subtleTextColor }]}>
-                    {new Date(item.commit.author.date).toLocaleDateString()}
-                  </ThemedText>
-                </ThemedView>
-              </TouchableOpacity>
-            ))}
+            <RepoCommitsList commits={commits} subtleTextColor={subtleTextColor} />
           </>
         )}
-      </ThemedView>
+      </SafeAreaView>
     </ScrollView>
   );
 }

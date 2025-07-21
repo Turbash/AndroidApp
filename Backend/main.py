@@ -550,6 +550,7 @@ async def analyze_repo_endpoint(request: RepoAnalysisRequest):
                 "ai_success": False,
                 "source": "fallback"
             }
+        logger.info(f"Final RepoAnalysisResponse: {analysis}")
         return RepoAnalysisResponse(**analysis)
     except Exception as e:
         logger.error(f"Repo profile analysis error: {str(e)}")
@@ -566,7 +567,67 @@ async def analyze_repo_endpoint(request: RepoAnalysisRequest):
             source="fallback"
         )
 
-@app.post("/analyze-goal")
-async def analyze_goal_endpoint():
-    """Goal-based insights endpoint (to be implemented)"""
-    return {"message": "Goal-based insights endpoint coming soon."}
+@app.post("/analyze-goal", response_model=LearningAnalysisResponse)
+async def analyze_goal_endpoint(request: LearningAnalysisRequest):
+    """Goal-based insights endpoint"""
+    try:
+        loop = asyncio.get_event_loop()
+        analysis = await loop.run_in_executor(
+            executor,
+            analyze_learning_progress,
+            request.goal_title,
+            request.category,
+            request.current_progress,
+            request.difficulty_level
+        )
+        if not analysis or not isinstance(analysis, dict) or "suggestions" not in analysis:
+            logger.warning("Goal analysis dict missing or invalid, using fallback.")
+            analysis = {
+                "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
+                "next_steps": ["Review fundamentals", "Build a small project"],
+                "estimated_time": "Varies based on complexity",
+                "resources": ["Documentation", "Online tutorials"]
+            }
+        logger.info(f"Final LearningAnalysisResponse: {analysis}")
+        return LearningAnalysisResponse(**analysis)
+    except Exception as e:
+        logger.error(f"Goal analysis error: {str(e)}")
+        logger.warning("Exception in goal endpoint, using fallback.")
+        return LearningAnalysisResponse(
+            suggestions=["Keep practicing consistently", "Break complex topics into smaller parts"],
+            next_steps=["Review fundamentals", "Build a small project"],
+            estimated_time="Varies based on complexity",
+            resources=["Documentation", "Online tutorials"]
+        )
+
+@app.post("/analyze-github", response_model=GitHubInsightsResponse)
+async def analyze_github_endpoint(request: GitHubAnalysisRequest):
+    """GitHub profile insights endpoint"""
+    try:
+        loop = asyncio.get_event_loop()
+        analysis = await loop.run_in_executor(
+            executor,
+            analyze_github_data,
+            request
+        )
+        if not analysis or not isinstance(analysis, dict) or "skill_analysis" not in analysis:
+            logger.warning("GitHub analysis dict missing or invalid, using fallback.")
+            analysis = {
+                "skill_analysis": {"primary_languages": ["JavaScript"], "experience_level": "beginner", "strengths": [], "areas_to_improve": []},
+                "learning_suggestions": ["Start with fundamental programming concepts"],
+                "project_insights": ["Build more projects to showcase skills"],
+                "recommended_goals": [{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
+                "coding_patterns": {"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
+            }
+        logger.info(f"Final GitHubInsightsResponse: {analysis}")
+        return GitHubInsightsResponse(**analysis)
+    except Exception as e:
+        logger.error(f"GitHub profile analysis error: {str(e)}")
+        logger.warning("Exception in github endpoint, using fallback.")
+        return GitHubInsightsResponse(
+            skill_analysis={"primary_languages": ["JavaScript"], "experience_level": "beginner", "strengths": [], "areas_to_improve": []},
+            learning_suggestions=["Start with fundamental programming concepts"],
+            project_insights=["Build more projects to showcase skills"],
+            recommended_goals=[{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
+            coding_patterns={"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
+        )

@@ -6,6 +6,7 @@ import { GitHubDashboard } from '../../components/GitHubDashboard';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { getGitHubUsername } from '../../utils/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardScreen() {
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ThemedText type="title">Developer Dashboard</ThemedText>
       {githubUsername ? (
         <GitHubDashboard username={githubUsername} />
@@ -54,9 +55,10 @@ export default function DashboardScreen() {
             title="Connect GitHub Account" 
             onPress={() => router.push('/github-connect')}
           />
+          
         </ThemedView>
       )}
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 

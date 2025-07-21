@@ -7,6 +7,7 @@ import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { fetchUserProfile } from '../services/github';
 import { saveGitHubUsername } from '../utils/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GitHubConnectScreen() {
   const [username, setUsername] = useState('');
@@ -39,7 +40,7 @@ export default function GitHubConnectScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ThemedText type="title">Connect GitHub</ThemedText>
       <ThemedText style={styles.description}>
         Connect your GitHub account to automatically track your repositories, commits, and coding activity
@@ -59,7 +60,7 @@ export default function GitHubConnectScreen() {
         onPress={handleConnect}
         disabled={loading}
       />
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 

@@ -1,36 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import DashboardScreen from './index';
+import GoalsScreen from './goals';
+import ProfileScreen from './profile';
+import { ThemedText } from '../../components/ThemedText';
+
+const Tab = createBottomTabNavigator();
 
 export default function TabLayout() {
   return (
-    <Tabs>
-      <Tabs.Screen
+    <Tab.Navigator>
+      <Tab.Screen
         name="index"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
-          ),
-        }}
+        component={DashboardScreen}
+        options={{ title: 'Home', tabBarIcon: () => <ThemedText>🏠</ThemedText> }}
       />
-      <Tabs.Screen
+      <Tab.Screen
+        name="goals"
+        component={GoalsScreen}
+        options={{ title: 'Goals', tabBarIcon: () => <ThemedText>🎯</ThemedText> }}
+      />
+      <Tab.Screen
         name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-        }}
+        component={ProfileScreen}
+        options={{ title: 'Profile', tabBarIcon: () => <ThemedText>👤</ThemedText> }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings", 
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    </Tab.Navigator>
   );
 }
