@@ -1,3 +1,66 @@
+import { fetchUserProfile, fetchUserRepos, fetchRepoReadme, fetchAllRepoCode } from './github';
+// Gather user profile, profile README, and top 5 repos (with name, readme, code, stars, forks, topics, languages) for ML analysis
+export async function gatherUserMLAnalysisData(username: string): Promise<any> {
+  // 1. Fetch user profile
+  const profile = await fetchUserProfile(username, false);
+
+  // 2. Try to fetch profile README (if exists, usually in a repo named <username>/<username>)
+  let profileReadme: string | null = null;
+  try {
+    profileReadme = await fetchRepoReadme(username, username);
+  } catch (e) {
+    profileReadme = null;
+  }
+
+  // 3. Fetch all repos, sort by last updated, pick last 5 updated
+  let repos = await fetchUserRepos(username, false);
+  repos = Array.isArray(repos) ? repos : [];
+  const lastUpdatedRepos = [...repos]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5);
+
+  // 4. For each repo, fetch README and file tree (no code for dev analysis)
+  const repoSummaries = [];
+  for (const repo of lastUpdatedRepos) {
+    let readme = null;
+    let tree = null;
+    try {
+      readme = await fetchRepoReadme(username, repo.name);
+    } catch (e) { readme = null; }
+    try {
+      // Fetch the file tree using the GitHub API
+      const encodedUsername = encodeURIComponent(username.trim());
+      const encodedRepoName = encodeURIComponent(repo.name.trim());
+      const branch = repo.default_branch || 'main';
+      const treeUrl = `https://api.github.com/repos/${encodedUsername}/${encodedRepoName}/git/trees/${branch}?recursive=1`;
+      const resp = await fetch(treeUrl, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+      if (resp.ok) {
+        const treeData = await resp.json();
+        tree = Array.isArray(treeData.tree)
+          ? treeData.tree.map((item: any) => ({ path: item.path, type: item.type, size: item.size || 0 }))
+          : null;
+      }
+    } catch (e) { tree = null; }
+    repoSummaries.push({
+      name: repo.name,
+      readme,
+      tree,
+      stars: repo.stargazers_count || 0,
+      forks: repo.forks_count || 0,
+      topics: repo.topics || [],
+      languages: repo.language ? { [repo.language]: 1 } : {}, // fallback if no languages API
+    });
+  }
+
+  // 5. Build payload
+  const payload = {
+    username,
+    profile,
+    profile_readme: profileReadme,
+    repos: repoSummaries
+  };
+  return payload;
+}
 import { GitHubCommit, GitHubRepo } from './github';
 import { MLModelsService } from './mlModels';
 import { getCachedMLInsights, setCachedMLInsights } from '../utils/storage';

@@ -28,22 +28,25 @@ export default function ProfileScreen() {
       console.log('👤 Loading profile for username:', username);
       if (username) {
         setGithubUsername(username);
-        try {
-          const { fetchUserProfile } = await import('../../services/github');
-          const userProfile = await fetchUserProfile(username, true);
-          console.log('✅ Profile loaded:', {
+        // Try to load from permanent cache first
+        const { getCachedUserProfile, fetchUserProfile } = await import('../../services/github');
+        const cachedProfile = await getCachedUserProfile(username);
+        if (cachedProfile) {
+          console.log('⚡ Loaded user profile from permanent cache:', {
+            name: cachedProfile.name,
+            login: cachedProfile.login,
+            avatar: cachedProfile.avatar_url
+          });
+          setUserProfile(cachedProfile);
+        } else {
+          // If not cached, fetch from API and cache it
+          const userProfile = await fetchUserProfile(username, false);
+          console.log('✅ Profile loaded from API and cached:', {
             name: userProfile.name,
             login: userProfile.login,
             avatar: userProfile.avatar_url
           });
           setUserProfile(userProfile);
-        } catch (error) {
-          console.error('❌ Failed to fetch fresh profile:', error);
-          const cached = await getCachedGitHubData(username);
-          if (cached && cached.userProfile) {
-            console.log('📦 Using cached profile data');
-            setUserProfile(cached.userProfile);
-          }
         }
       }
     } catch (error) {

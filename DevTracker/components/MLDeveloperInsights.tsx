@@ -47,7 +47,6 @@ export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsP
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
-    </ScrollView>
   );
 }
 

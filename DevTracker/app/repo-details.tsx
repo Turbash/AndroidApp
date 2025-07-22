@@ -17,7 +17,7 @@ import { RepoCommitsList } from '../components/RepoCommitsList';
 import { RepoAnalysisDisplay } from '../components/RepoAnalysisDisplay';
 
 export default function RepoDetailsScreen() {
-  const { repoName } = useLocalSearchParams<{ repoName: string }>();
+  const { repoName, autoAnalyze } = useLocalSearchParams<{ repoName: string, autoAnalyze?: string }>();
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [languages, setLanguages] = useState<Record<string, number>>({});
   const [readme, setReadme] = useState<string | null>(null);
@@ -37,6 +37,14 @@ export default function RepoDetailsScreen() {
     console.log('RepoDetailsScreen mounted with repoName:', repoName);
     loadRepoData();
   }, [repoName]);
+
+  // Auto-trigger analysis if autoAnalyze param is present
+  useEffect(() => {
+    if (autoAnalyze && !analysisLoading && !showAnalysis && !loading && !error) {
+      handleAnalyseRepo();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAnalyze, analysisLoading, showAnalysis, loading, error, repoName, username]);
   
   const loadRepoData = async () => {
     try {
@@ -218,7 +226,10 @@ export default function RepoDetailsScreen() {
             )}
             <TouchableOpacity 
               style={[styles.closeButton, { backgroundColor: subtleTextColor }]}
-              onPress={() => setShowAnalysis(false)}
+              onPress={() => {
+                setShowAnalysis(false);
+                // Do not trigger analysis again
+              }}
             >
               <ThemedText style={styles.closeButtonText}>Close Analysis</ThemedText>
             </TouchableOpacity>

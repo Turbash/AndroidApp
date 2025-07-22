@@ -23,6 +23,7 @@ export default function DashboardScreen() {
       const loadData = async () => {
         const username = await getGitHubUsername();
         if (isActive) {
+          console.log('📦 Loaded GitHub username from storage:', username);
           setGithubUsername(username);
           setLoading(false);
         }

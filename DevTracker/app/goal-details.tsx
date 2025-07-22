@@ -5,8 +5,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useThemeColor } from '../hooks/useThemeColor';
-import { getGitHubUsername } from '../utils/storage';
-import { GoalAnalysisModal } from '../components/GoalAnalysisModal'; // keep for reference, but not used for display
+import { getGitHubUsername, getGoalChatHistory, setGoalChatHistory, ChatTurn, clearGoalChatHistory, getCachedGitHubData } from '../utils/storage';
+import { GoalAnalysisModal } from '../components/GoalAnalysisModal';
 
 
 interface Goal {
@@ -31,7 +31,25 @@ export default function GoalDetailsScreen() {
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [progressNote, setProgressNote] = useState('');
+  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Clear chat history when deleting a goal
+  const handleDeleteGoal = async () => {
+    if (!goal) return;
+    try {
+      const stored = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+      let goals: Goal[] = [];
+      if (stored) goals = JSON.parse(stored);
+      const filtered = goals.filter(g => g.id !== goal.id);
+      await AsyncStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(filtered));
+      await clearGoalChatHistory(goal.id);
+      setGoal(null);
+      setChatHistory([]);
+    } catch (e) {
+      console.error('Failed to delete goal:', e);
+    }
+  };
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [username, setUsername] = useState<string>('');
   const [analysis, setAnalysis] = useState<GoalAnalysis | null>(null);
@@ -43,6 +61,9 @@ export default function GoalDetailsScreen() {
     getGitHubUsername().then(username => {
       if (username) setUsername(username);
     });
+    if (goalId) {
+      getGoalChatHistory(goalId).then(setChatHistory);
+    }
   }, [goalId]);
 
   const loadGoal = async () => {
@@ -84,39 +105,64 @@ export default function GoalDetailsScreen() {
       progressNotes: [...goal.progressNotes, progressNote],
     };
     await saveGoal(updatedGoal);
+  const newHistory: ChatTurn[] = [...chatHistory, { role: 'user' as const, message: progressNote }].slice(-10);
+  setChatHistory(newHistory);
+  await setGoalChatHistory(goalId, newHistory);
     setProgressNote('');
   };
 
   const handleGetInsights = async () => {
     setAnalysisLoading(true);
     setAnalysis(null);
+    setError(null);
     try {
       const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const url = `${BACKEND_URL}/analyze-goal`;
+      let githubData = null;
+      if (username) {
+        githubData = await getCachedGitHubData(username);
+      }
       const payload: any = {
-        username,
-        goal_title: goal?.title,
-        category: goal?.category,
-        description: goal?.description,
-        ...(goal?.progressNotes && goal.progressNotes.length > 0
-          ? { current_progress: goal.progressNotes.join('\n') }
-          : {}),
+        goal_title: goal?.title || '',
+        category: goal?.category || '',
+        current_progress: goal?.progressNotes?.length ? goal.progressNotes.join('\n') : '',
+        description: goal?.description || '',
+        chat_history: chatHistory,
+        github_profile: githubData?.userProfile || undefined,
+        github_repos: githubData?.repos || undefined,
       };
-      // Add repo/language/readme data if needed here
-
+      console.log('[GoalDetailsScreen] Payload to /analyze-goal:', JSON.stringify(payload));
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        const errText = await res.text();
+        setError(`Backend error: ${res.status} ${errText}`);
+        return;
+      }
       const data = await res.json();
       setAnalysis(data);
+      if (data && data.suggestions) {
+        const aiMessage = [
+          ...(data.suggestions?.length ? ['Suggestions: ' + data.suggestions.join('; ')] : []),
+          ...(data.next_steps?.length ? ['Next Steps: ' + data.next_steps.join('; ')] : []),
+          ...(data.estimated_time ? ['Estimated Time: ' + data.estimated_time] : []),
+          ...(data.resources?.length ? ['Resources: ' + data.resources.join('; ')] : []),
+        ].join('\n');
+        const newHistory: ChatTurn[] = [...chatHistory, { role: 'ai' as const, message: aiMessage }].slice(-10);
+        setChatHistory(newHistory);
+        await setGoalChatHistory(goalId, newHistory);
+      }
     } catch (e) {
       setAnalysis(null);
+      setError('Failed to get insights.');
     } finally {
       setAnalysisLoading(false);
     }
   };
+
 
   return (
     <ScrollView style={styles.scrollContainer}>
@@ -197,6 +243,26 @@ export default function GoalDetailsScreen() {
                     <ThemedText key={i} style={styles.analysisItem}>• {s}</ThemedText>
                   ))}
                 </View>
+              )}
+
+              {/* Chat History Display (user progress and AI responses only) */}
+              <ThemedText style={styles.sectionTitle}>Chat History</ThemedText>
+              {chatHistory.length === 0 && (
+                <ThemedText style={styles.emptyState}>No chat yet.</ThemedText>
+              )}
+              {chatHistory.map((turn, idx) => (
+                turn.role === 'user' ? (
+                  <ThemedText key={idx} style={{ color: '#0c4a6e', marginBottom: 2 }}>
+                    <ThemedText style={{ fontWeight: 'bold' }}>You:</ThemedText> {turn.message}
+                  </ThemedText>
+                ) : (
+                  <ThemedText key={idx} style={{ color: '#10b981', marginBottom: 2 }}>
+                    <ThemedText style={{ fontWeight: 'bold' }}>AI:</ThemedText> {turn.message}
+                  </ThemedText>
+                )
+              ))}
+              {error && (
+                <ThemedText style={{ color: 'red', marginTop: 8 }}>{error}</ThemedText>
               )}
             </>
           )

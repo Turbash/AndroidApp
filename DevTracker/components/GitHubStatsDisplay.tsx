@@ -1,3 +1,4 @@
+import { getCachedGitHubStatsImage, setCachedGitHubStatsImage } from '../utils/storage';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useThemeColor } from '../hooks/useThemeColor';
@@ -29,6 +30,19 @@ export function GitHubStatsDisplay({ username, languageCount = 10 }: GitHubStats
     setLoading(true);
 
     try {
+      // Try cache first
+      const cached = await getCachedGitHubStatsImage(username);
+      if (cached) {
+        setStatsData({
+          statsImageUrl: cached.statsImageUrl,
+          languagesImageUrl: cached.languagesImageUrl,
+          isAvailable: true
+        });
+        setValidatedUsername(username);
+        setLoading(false);
+        return;
+      }
+
       const userValidation = await GitHubStatsService.validateAndGetCorrectUsername(username);
       if (!userValidation.exists) {
         setStatsData({
@@ -46,6 +60,9 @@ export function GitHubStatsDisplay({ username, languageCount = 10 }: GitHubStats
 
       const stats = await GitHubStatsService.fetchGitHubStats(correctUsername, languageCount);
       setStatsData(stats);
+      if (stats.isAvailable) {
+        await setCachedGitHubStatsImage(correctUsername, stats.statsImageUrl, stats.languagesImageUrl);
+      }
     } catch (error) {
       setStatsData(null);
     } finally {

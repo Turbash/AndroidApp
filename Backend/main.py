@@ -1,17 +1,25 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel
 from g4f import Client
 from typing import List, Optional
-import json
+from dotenv import load_dotenv
 import os
-import time
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+import httpx
+import json
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
+GITHUB_OAUTH_REDIRECT_URI = os.environ.get("GITHUB_OAUTH_REDIRECT_URI", "http://localhost:8000/auth/github/callback")
 
 app = FastAPI(title="DevTracker API", description="Learning Progress Tracker API")
 
@@ -26,59 +34,25 @@ app.add_middleware(
 g4f_client = Client()
 executor = ThreadPoolExecutor(max_workers=5)
 
-goals_db = []
-progress_cache = {}
-
-class Goal(BaseModel):
-    id: Optional[str] = None
-    title: str
-    description: str
-    category: str
-    completed: bool = False
-    progress_notes: List[str] = []
-
-class ProgressUpdate(BaseModel):
-    goal_id: str
-    note: str
-
-class LearningAnalysisRequest(BaseModel):
-    goal_title: str
-    category: str
-    current_progress: str
-    difficulty_level: int = 5  
-
-class LearningAnalysisResponse(BaseModel):
-    suggestions: List[str]
-    next_steps: List[str]
-    estimated_time: str
-    resources: List[str]
-
-class GitHubAnalysisRequest(BaseModel):
-    username: str
-    readme_content: Optional[str] = None
-    commit_messages: List[str] = []
-    repo_languages: dict = {} 
-    repo_names: List[str] = []
-
-class GitHubInsightsResponse(BaseModel):
-    skill_analysis: dict
-    learning_suggestions: List[str]
-    project_insights: List[str]
-    recommended_goals: List[dict]
-    coding_patterns: dict
+class RepoSummary(BaseModel):
+    name: str
+    readme: Optional[str] = None
+    code: Optional[str] = None
+    tree: Optional[list] = None  
+    stars: int = 0
+    forks: int = 0
+    topics: List[str] = []
+    languages: dict = {}
 
 class DevAnalysisRequest(BaseModel):
     username: str
-    readme_content: Optional[str] = None
-    commit_messages: List[str] = []
-    repo_languages: dict = {}  
-    repo_names: List[str] = []
-    total_repos: int = 0
-    total_commits: int = 0
+    profile: Optional[dict] = None
+    profile_readme: Optional[str] = None
+    repos: List[RepoSummary] = []
 
 class DevAnalysisResponse(BaseModel):
     summary: str
-    skill_level: str  
+    skill_level: str
     top_languages: List[str]
     strengths: List[str]
     improvement_areas: List[str]
@@ -89,7 +63,7 @@ class DevAnalysisResponse(BaseModel):
     project_complexity: Optional[dict] = None
     coding_patterns: Optional[dict] = None
     ai_success: bool = True
-    source: str = "ai"  
+    source: str = "ai"
 
 class RepoAnalysisRequest(BaseModel):
     username: str
@@ -101,6 +75,8 @@ class RepoAnalysisRequest(BaseModel):
     forks: int = 0
     topics: List[str] = []
     size: int = 0
+    code: Optional[str] = None
+    tree: Optional[list] = None  
 
 class RepoAnalysisResponse(BaseModel):
     summary: str
@@ -113,267 +89,132 @@ class RepoAnalysisResponse(BaseModel):
     ai_success: bool = True
     source: str = "ai"
 
-class GoalAnalysisRequest(BaseModel):
-    username: str
-    goal: dict
-    github_data: dict
+class LearningAnalysisRequest(BaseModel):
+    goal_title: str
+    category: str
+    current_progress: str
+    description: Optional[str] = None
+    chat_history: Optional[list] = None  # List of dicts: {"role": "user"|"ai", "message": str}
 
-class GoalAnalysisResponse(BaseModel):
+class LearningAnalysisResponse(BaseModel):
     suggestions: List[str]
     next_steps: List[str]
     estimated_time: str
     resources: List[str]
 
-def analyze_learning_progress(goal_title: str, category: str, progress: str, difficulty: int) -> dict:
-    """Analyze learning progress and provide AI suggestions"""
-    try:
-        prompt = f"""
-        You are a learning mentor for developers. Analyze this learning goal:
-        
-        Goal: {goal_title}
-        Category: {category}  
-        Current Progress: {progress}
-        Difficulty Level: {difficulty}/10
-        
-        Provide helpful suggestions in this JSON format:
-        {{
-            "suggestions": ["suggestion1", "suggestion2", "suggestion3"],
-            "next_steps": ["step1", "step2", "step3"],
-            "estimated_time": "X hours/days/weeks",
-            "resources": ["resource1", "resource2", "resource3"]
-        }}
-        
-        Keep suggestions practical and actionable for a developer.
-        """
-        
-        response = g4f_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=500,
-            temperature=0.7
-        )
-        
-        if response and response.choices:
-            content = response.choices[0].message.content
-            try:
-                if '{' in content and '}' in content:
-                    json_start = content.find('{')
-                    json_end = content.rfind('}') + 1
-                    json_str = content[json_start:json_end]
-                    return json.loads(json_str)
-            except:
-                pass
-        
-        return {
-            "suggestions": [
-                f"Break down {goal_title} into smaller daily tasks",
-                f"Practice {category} concepts for 30 minutes daily",
-                "Join online communities for peer support"
-            ],
-            "next_steps": [
-                "Review current progress and identify gaps",
-                "Set specific weekly milestones",
-                "Find practice projects"
-            ],
-            "estimated_time": "2-4 weeks with consistent practice",
-            "resources": [
-                "Official documentation",
-                "YouTube tutorials",
-                "Practice coding platforms"
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"AI analysis error: {str(e)}")
-        return {
-            "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
-            "next_steps": ["Review fundamentals", "Build a small project"],
-            "estimated_time": "Varies based on complexity",
-            "resources": ["Documentation", "Online tutorials"]
-        }
+@app.get("/auth/github/login")
+async def github_login(request: Request):
+    if not GITHUB_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="GitHub OAuth client ID not set.")
+    next_uri = request.query_params.get("redirect_uri")
+    github_callback = GITHUB_OAUTH_REDIRECT_URI
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}"
+        f"&redirect_uri={github_callback}"
+        f"&scope=read:user public_repo"
+        + (f"&state={next_uri}" if next_uri else "")
+    )
+    return RedirectResponse(github_auth_url)
 
-def analyze_github_data(github_data: GitHubAnalysisRequest) -> dict:
-    """Analyze GitHub data to provide learning insights"""
-    try:
-        languages = ", ".join([f"{lang} ({pct}%)" for lang, pct in github_data.repo_languages.items()])
-        recent_commits = "\n".join(github_data.commit_messages[-10:])  # Last 10 commits
-        repos = ", ".join(github_data.repo_names)
-        
-        prompt = f"""
-        Analyze this developer's GitHub profile and provide learning insights:
-        
-        Username: {github_data.username}
-        
-        Repository Languages: {languages}
-        
-        Repository Names: {repos}
-        
-        Recent Commit Messages:
-        {recent_commits}
-        
-        README Content Sample:
-        {github_data.readme_content[:500] if github_data.readme_content else "No README provided"}
-        
-        Based on this data, provide analysis in this JSON format:
-        {{
-            "skill_analysis": {{
-                "primary_languages": ["lang1", "lang2"],
-                "experience_level": "beginner/intermediate/advanced",
-                "strengths": ["strength1", "strength2"],
-                "areas_to_improve": ["area1", "area2"]
-            }},
-            "learning_suggestions": ["suggestion1", "suggestion2", "suggestion3"],
-            "project_insights": ["insight1", "insight2", "insight3"],
-            "recommended_goals": [
-                {{"title": "Goal 1", "category": "Category", "description": "Description", "priority": "high/medium/low"}},
-                {{"title": "Goal 2", "category": "Category", "description": "Description", "priority": "high/medium/low"}}
-            ],
-            "coding_patterns": {{
-                "commit_frequency": "high/medium/low",
-                "project_variety": "diverse/focused/limited",
-                "code_quality_indicators": ["indicator1", "indicator2"]
-            }}
-        }}
-        
-        Keep insights practical and actionable for a developer's learning journey.
-        """
-        
-        response = g4f_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=800,
-            temperature=0.7
-        )
-        
-        if response and response.choices:
-            content = response.choices[0].message.content
-            try:
-                if '{' in content and '}' in content:
-                    json_start = content.find('{')
-                    json_end = content.rfind('}') + 1
-                    json_str = content[json_start:json_end]
-                    return json.loads(json_str)
-            except Exception as parse_error:
-                logger.warning(f"JSON parsing failed: {parse_error}")
-        
-        primary_langs = list(github_data.repo_languages.keys())[:2] if github_data.repo_languages else ["JavaScript"]
-        
-        return {
-            "skill_analysis": {
-                "primary_languages": primary_langs,
-                "experience_level": "intermediate" if len(github_data.commit_messages) > 50 else "beginner",
-                "strengths": [f"{lang} development" for lang in primary_langs[:2]],
-                "areas_to_improve": ["Code documentation", "Testing practices"]
-            },
-            "learning_suggestions": [
-                f"Deepen your {primary_langs[0]} skills" if primary_langs else "Focus on a primary language",
-                "Improve commit message quality",
-                "Add more comprehensive READMEs to projects"
-            ],
-            "project_insights": [
-                f"You work with {len(github_data.repo_languages)} different technologies",
-                f"You have {len(github_data.repo_names)} repositories",
-                "Consider focusing on fewer technologies for deeper expertise"
-            ],
-            "recommended_goals": [
-                {
-                    "title": f"Master {primary_langs[0] if primary_langs else 'JavaScript'}",
-                    "category": primary_langs[0] if primary_langs else "JavaScript", 
-                    "description": f"Build advanced projects using {primary_langs[0] if primary_langs else 'JavaScript'}",
-                    "priority": "high"
-                },
-                {
-                    "title": "Improve Documentation Skills",
-                    "category": "Documentation",
-                    "description": "Write better READMEs and code comments",
-                    "priority": "medium"
-                }
-            ],
-            "coding_patterns": {
-                "commit_frequency": "high" if len(github_data.commit_messages) > 100 else "medium",
-                "project_variety": "diverse" if len(github_data.repo_languages) > 3 else "focused",
-                "code_quality_indicators": ["Regular commits", "Multiple repositories"]
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"GitHub analysis error: {str(e)}")
-        return {
-            "skill_analysis": {"primary_languages": ["JavaScript"], "experience_level": "beginner", "strengths": [], "areas_to_improve": []},
-            "learning_suggestions": ["Start with fundamental programming concepts"],
-            "project_insights": ["Build more projects to showcase skills"],
-            "recommended_goals": [{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
-            "coding_patterns": {"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
-        }
+@app.get("/auth/github/callback")
+async def github_callback(request: Request, code: str = None, state: str = None):
+    logger.info(f"/auth/github/callback called with code: {code}")
+    if not code:
+        logger.error("Missing code in callback.")
+        raise HTTPException(status_code=400, detail="Missing code in callback.")
+    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
+        logger.error("GitHub OAuth credentials not set.")
+        raise HTTPException(status_code=500, detail="GitHub OAuth credentials not set.")
+    github_callback = GITHUB_OAUTH_REDIRECT_URI
+    logger.info(f"Using backend callback for token exchange: {github_callback}")
+    token_url = "https://github.com/login/oauth/access_token"
+    headers = {"Accept": "application/json"}
+    data = {
+        "client_id": GITHUB_CLIENT_ID,
+        "client_secret": GITHUB_CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": github_callback,
+    }
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(token_url, headers=headers, data=data)
+        token_json = token_resp.json()
+        logger.info(f"GitHub token response: {token_json}")
+        access_token = token_json.get("access_token")
+        if not access_token:
+            logger.error("Failed to obtain access token from GitHub.")
+            raise HTTPException(status_code=400, detail="Failed to obtain access token from GitHub.")
+    next_uri = state
+    if not next_uri:
+        logger.error("Missing 'state' (Expo app URI) in callback.")
+        raise HTTPException(status_code=400, detail="Missing 'state' (Expo app URI) in callback.")
+    redirect_url = f"{next_uri}#access_token={access_token}"
+    logger.info(f"Redirecting to Expo app: {redirect_url}")
+    return RedirectResponse(redirect_url)
 
 def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
-    """Single comprehensive analysis of developer's GitHub profile, including complexity and pattern analysis"""
     try:
-        def format_langs(repo_languages):
-            items = []
-            for lang, pct in repo_languages.items():
-                try:
-                    items.append(f"{lang} ({pct:.1f}%)")
-                except Exception:
-                    items.append(f"{lang} ({pct})")
-            return ", ".join(items)
-
-        languages = format_langs(data.repo_languages)
-        recent_commits = "\n".join(data.commit_messages[-15:])  # Last 15 commits
-
+        profile_str = json.dumps(data.profile, indent=2) if data.profile else "No profile info"
+        profile_readme = data.profile_readme[:500] if data.profile_readme else "No profile README"
+        repo_summaries = []
+        for repo in data.repos[:5]:
+            section = f"\n--- Repo: {repo.name} ---"
+            section += f"\nStars: {repo.stars} | Forks: {repo.forks} | Topics: {', '.join(repo.topics)}"
+            section += f"\nLanguages: {json.dumps(repo.languages)}"
+            if repo.tree:
+                section += f"\n\n[FILE TREE]\n{json.dumps(repo.tree, indent=2)}"
+            if repo.readme:
+                section += f"\n\n[README]\n{repo.readme[:300]}"
+            if repo.code:
+                section += f"\n\n[CODE SAMPLE]\n{repo.code[:1000]}"
+            repo_summaries.append(section)
+        repos_str = "\n".join(repo_summaries)
         prompt = f"""
-        Analyze this developer's complete profile and provide personalized learning insights.
+You are an advanced AI coding mentor. Analyze this developer's full GitHub profile and provide a comprehensive, actionable, and motivating assessment.
 
-        Developer: {data.username}
-        Total Repositories: {data.total_repos}
-        Total Commits: {data.total_commits}
-        Programming Languages Used: {languages}
-        Repository Names: {', '.join(data.repo_names[:10])}
-        Recent Commit Messages:
-        {recent_commits}
-        README Sample:
-        {data.readme_content[:300] if data.readme_content else "No README available"}
+Developer: {data.username}
+Profile Info: {profile_str}
+Profile README: {profile_readme}
+---
+Sample of 5 Repositories (each section is clearly separated):
+{repos_str}
 
-        Provide a comprehensive analysis in this exact JSON format:
-        {{
-            "summary": "2-3 sentence overview of their current development level",
-            "skill_level": "beginner/intermediate/advanced",
-            "top_languages": ["lang1", "lang2", "lang3"],
-            "strengths": ["strength1", "strength2", "strength3"],
-            "improvement_areas": ["area1", "area2", "area3"],
-            "recommended_goals": [
-                {{"title": "Goal 1", "category": "Category", "description": "Description", "timeline": "2-4 weeks"}},
-                {{"title": "Goal 2", "category": "Category", "description": "Description", "timeline": "1-2 months"}}
-            ],
-            "learning_path": ["step1", "step2", "step3", "step4"],
-            "estimated_hours": 40,
-            "motivation_message": "Encouraging message for the developer",
-            "project_complexity": {{
-                "overall": 0-100,
-                "technicalDebt": 0-100,
-                "architecture": 0-100,
-                "scalability": 0-100,
-                "reasoning": "Short reasoning about complexity"
-            }},
-            "coding_patterns": {{
-                "consistency": 0-100,
-                "velocity": 0-100,
-                "quality": 0-100,
-                "patterns": ["pattern1", "pattern2"],
-                "confidence": 0-1
-            }}
-        }}
-
-        Make it personal, actionable, and motivating based on their actual coding activity.
-        """
-
+Reply ONLY in this JSON format:
+{{
+    "summary": "2-3 sentence overview of their current development level",
+    "skill_level": "beginner/intermediate/advanced",
+    "top_languages": ["lang1", "lang2", "lang3"],
+    "strengths": ["strength1", "strength2", "strength3"],
+    "improvement_areas": ["area1", "area2", "area3"],
+    "recommended_goals": [
+        {{"title": "Goal 1", "category": "Category", "description": "Description", "timeline": "2-4 weeks"}},
+        {{"title": "Goal 2", "category": "Category", "description": "Description", "timeline": "1-2 months"}}
+    ],
+    "learning_path": ["step1", "step2", "step3", "step4"],
+    "estimated_hours": 40,
+    "motivation_message": "Encouraging message for the developer",
+    "project_complexity": {{
+        "overall": 0-100,
+        "technicalDebt": 0-100,
+        "architecture": 0-100,
+        "scalability": 0-100,
+        "reasoning": "Short reasoning about complexity"
+    }},
+    "coding_patterns": {{
+        "consistency": 0-100,
+        "velocity": 0-100,
+        "quality": 0-100,
+        "patterns": ["pattern1", "pattern2"],
+        "confidence": 0-1
+    }}
+}}
+Make your analysis personal, specific, and focused on real growth opportunities.
+"""
         response = g4f_client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
             temperature=0.6
         )
-
         if response and response.choices:
             content = response.choices[0].message.content
             try:
@@ -420,32 +261,18 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
     }
 
 def analyze_repo_profile(data: RepoAnalysisRequest) -> dict:
-    """Analyze a single repo and provide insights"""
     try:
-        prompt = f"""
-        Analyze this GitHub repository and provide actionable insights:
-
-        Repository: {data.repo_name}
-        Owner: {data.username}
-        Stars: {data.stars}
-        Forks: {data.forks}
-        Topics: {', '.join(data.topics)}
-        Size: {data.size} KB
-        Languages: {', '.join([f"{lang} ({pct})" for lang, pct in data.repo_languages.items()])}
-        README Sample: {data.readme_content[:300] if data.readme_content else "No README available"}
-        Recent Commits: {'; '.join(data.commit_messages[-10:])}
-
-        Respond in this JSON format:
-        {{
-            "summary": "Short summary of repo quality and focus",
-            "strengths": ["strength1", "strength2"],
-            "improvement_areas": ["area1", "area2"],
-            "code_quality_score": 0-100,
-            "popularity_score": 0-100,
-            "documentation_score": 0-100,
-            "recommendations": ["rec1", "rec2"]
-        }}
-        """
+        code_snippet = (data.code[:1000] + '\n...\n[truncated]') if data.code and len(data.code) > 1200 else (data.code or None)
+        prompt = f"You are a senior open-source reviewer. Analyze this GitHub repository and provide clear, actionable, and constructive feedback.\n\n"
+        prompt += f"Repository: {data.repo_name}\nOwner: {data.username}\nStars: {data.stars}\nForks: {data.forks}\nTopics: {', '.join(data.topics)}\nSize: {data.size} KB\nLanguages: {', '.join([f'{lang} ({pct})' for lang, pct in data.repo_languages.items()])}\n"
+        if data.tree:
+            prompt += f"\n[FILE TREE]\n{json.dumps(data.tree, indent=2)}"
+        if data.readme_content:
+            prompt += f"\n[README]\n{data.readme_content[:300]}"
+        if code_snippet:
+            prompt += f"\n[CODE SAMPLE]\n{code_snippet}"
+        prompt += f"\nRecent Commits: {'; '.join(data.commit_messages[-10:])}\n"
+        prompt += "\nReply ONLY in this JSON format:\n{\n    \"summary\": \"Short summary of repo quality and focus\",\n    \"strengths\": [\"strength1\", \"strength2\"],\n    \"improvement_areas\": [\"area1\", \"area2\"],\n    \"code_quality_score\": 0-100,\n    \"popularity_score\": 0-100,\n    \"documentation_score\": 0-100,\n    \"recommendations\": [\"rec1\", \"rec2\"]\n}\nMake your review specific, constructive, and focused on real improvement."
         response = g4f_client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
@@ -481,52 +308,46 @@ def analyze_repo_profile(data: RepoAnalysisRequest) -> dict:
         "source": "fallback"
     }
 
-def analyze_goal_structured(goal_data: dict, github_data: dict, username: str) -> dict:
-    """
-    Analyze a user's goal in the context of their GitHub data and provide AI suggestions.
-    """
+def analyze_learning_progress(goal_title: str, category: str, progress: str, description: Optional[str] = None, chat_history: Optional[list] = None) -> dict:
     try:
-        progress_str = "\n".join(goal_data.get("progress", [])) if goal_data.get("progress") else "No progress yet"
-        prompt = f"""
-You are an expert AI mentor for developers. The user below has a specific coding goal.
+        chat_str = ""
+        if chat_history:
+            for i, turn in enumerate(chat_history):
+                role = turn.get("role", "user")
+                label = "User" if role == "user" else "AI"
+                chat_str += f"Turn {i+1} - {label}: {turn.get('message', '')}\n"
+        else:
+            chat_str = "No previous chat.\n"
 
-First, analyze the user's goal and their progress so far.
-Then, use their real GitHub data to tailor your advice and suggestions.
+        progress_str = progress if progress and progress.strip() else "User is starting now."
 
----
-GOAL INFORMATION:
-- Title: {goal_data.get("title")}
-- Description: {goal_data.get("description")}
-- Category: {goal_data.get("category")}
-- Completed: {goal_data.get("completed")}
-- Progress Notes:
-{progress_str}
-
----
-GITHUB DATA (for context, use to personalize advice):
-- Username: {username}
-- Number of Public Repos: {len(github_data.get("public_repos", []))}
-- Profile README (first 200 chars): {github_data.get("profile_readme")[:200] if github_data.get("profile_readme") else "None"}
-- Example Repo Summaries: {[{"name": r.get("name"), "desc": r.get("description")} for r in github_data.get("public_repos", [])][:3]}
-- Languages Used: {', '.join(sorted(set(lang for repo in github_data.get("public_repos", []) for lang in (repo.get("languages") or {}).keys())))}
-
----
-INSTRUCTIONS:
-1. Give practical, actionable suggestions for the user to achieve their goal, considering their progress and actual GitHub activity.
-2. Reference their real coding work, languages, and repos if possible.
-3. If the goal is already completed, congratulate the user and suggest next-level goals.
-4. Respond ONLY in this JSON format:
-{{
-  "suggestions": ["suggestion1", "suggestion2"],
-  "next_steps": ["step1", "step2"],
-  "estimated_time": "X weeks/days",
-  "resources": ["resource1", "resource2"]
-}}
-"""
+        prompt = (
+            "You are a learning mentor for developers. You will help the user achieve their coding goal through an iterative, chat-based process.\n\n"
+            "Below is the chat history between the user and the AI. Each turn is clearly labeled as 'User' or 'AI'.\n---\n"
+            f"{chat_str}"
+            "---\n"
+            "The user has just entered NEW PROGRESS (since the last message):\n"
+            f"{progress_str}\n"
+            "This is their latest GitHub data (profile, repos, etc) as context (if provided by the frontend).\n\n"
+            f"Goal: {goal_title}\n"
+            f"Category: {category}\n"
+            f"Description: {description if description else ''}\n\n"
+            "Your task:\n"
+            "- Focus your suggestions on the user's most recent progress and their current context.\n"
+            "- Use the chat history to avoid repeating advice and to build on previous suggestions.\n"
+            "- Reply ONLY in this JSON format:\n"
+            '{\n'
+            '    "suggestions": ["suggestion1", "suggestion2", "suggestion3"],\n'
+            '    "next_steps": ["step1", "step2", "step3"],\n'
+            '    "estimated_time": "X hours/days/weeks",\n'
+            '    "resources": ["resource1", "resource2", "resource3"]\n'
+            '}\n'
+            "Keep suggestions practical, actionable, and tailored to the user's latest progress."
+        )
         response = g4f_client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=700,
+            max_tokens=500,
             temperature=0.7
         )
         if response and response.choices:
@@ -535,24 +356,39 @@ INSTRUCTIONS:
                 if '{' in content and '}' in content:
                     json_start = content.find('{')
                     json_end = content.rfind('}') + 1
-                    return json.loads(content[json_start:json_end])
-            except Exception as parse_error:
-                logger.warning(f"Goal JSON parsing failed: {parse_error}")
-        logger.warning("Goal AI response missing or invalid, using fallback.")
+                    json_str = content[json_start:json_end]
+                    return json.loads(json_str)
+            except:
+                pass
+        return {
+            "suggestions": [
+                f"Break down {goal_title} into smaller daily tasks",
+                f"Practice {category} concepts for 30 minutes daily",
+                "Join online communities for peer support"
+            ],
+            "next_steps": [
+                "Review current progress and identify gaps",
+                "Set specific weekly milestones",
+                "Find practice projects"
+            ],
+            "estimated_time": "2-4 weeks with consistent practice",
+            "resources": [
+                "Official documentation",
+                "YouTube tutorials",
+                "Practice coding platforms"
+            ]
+        }
     except Exception as e:
-        logger.error(f"Goal analysis error: {str(e)}")
-        logger.warning("Goal AI analysis failed, using fallback.")
-
-    return {
-        "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
-        "next_steps": ["Review fundamentals", "Build a small project"],
-        "estimated_time": "Varies based on complexity",
-        "resources": ["Documentation", "Online tutorials"]
-    }
+        logger.error(f"AI analysis error: {str(e)}")
+        return {
+            "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
+            "next_steps": ["Review fundamentals", "Build a small project"],
+            "estimated_time": "Varies based on complexity",
+            "resources": ["Documentation", "Online tutorials"]
+        }
 
 @app.post("/analyze-dev-profile", response_model=DevAnalysisResponse)
 async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
-    """Single comprehensive analysis of developer's GitHub profile"""
     try:
         loop = asyncio.get_event_loop()
         analysis = await loop.run_in_executor(
@@ -560,32 +396,9 @@ async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
             analyze_developer_profile,
             request
         )
-
-        if isinstance(analysis, str):
-            try:
-                analysis = json.loads(analysis)
-                logger.info(f"Parsed string AI response successfully: {analysis}")
-            except Exception as e:
-                logger.error(f"Failed to parse string AI response: {e}")
-                analysis = {}
-
         if not analysis or not isinstance(analysis, dict) or "summary" not in analysis:
-            logger.warning("Analysis dict missing or invalid, using fallback.")
-            analysis = {
-                "summary": "No AI analysis available. This is a fallback response.",
-                "skill_level": "unknown",
-                "top_languages": [],
-                "strengths": [],
-                "improvement_areas": [],
-                "recommended_goals": [],
-                "learning_path": [],
-                "estimated_hours": 0,
-                "motivation_message": "Keep coding and learning! (Fallback response)",
-                "project_complexity": None,
-                "coding_patterns": None,
-                "ai_success": False,
-                "source": "fallback"
-            }
+            logger.error("AI analysis not available for developer profile.")
+            raise HTTPException(status_code=503, detail="AI analysis not available for developer profile.")
         logger.info(f"Final DevAnalysisResponse: {analysis}")
         return DevAnalysisResponse(**analysis)
     except Exception as e:
@@ -609,7 +422,6 @@ async def analyze_developer_profile_endpoint(request: DevAnalysisRequest):
 
 @app.post("/analyze-repo", response_model=RepoAnalysisResponse)
 async def analyze_repo_endpoint(request: RepoAnalysisRequest):
-    """Repo-based insights endpoint"""
     try:
         loop = asyncio.get_event_loop()
         analysis = await loop.run_in_executor(
@@ -618,18 +430,8 @@ async def analyze_repo_endpoint(request: RepoAnalysisRequest):
             request
         )
         if not analysis or not isinstance(analysis, dict) or "summary" not in analysis:
-            logger.warning("Repo analysis dict missing or invalid, using fallback.")
-            analysis = {
-                "summary": "No AI analysis available. This is a fallback response.",
-                "strengths": [],
-                "improvement_areas": [],
-                "code_quality_score": 0,
-                "popularity_score": 0,
-                "documentation_score": 0,
-                "recommendations": ["Improve documentation", "Increase commit frequency"],
-                "ai_success": False,
-                "source": "fallback"
-            }
+            logger.error("AI analysis not available for repository.")
+            raise HTTPException(status_code=503, detail="AI analysis not available for repository.")
         logger.info(f"Final RepoAnalysisResponse: {analysis}")
         return RepoAnalysisResponse(**analysis)
     except Exception as e:
@@ -649,7 +451,6 @@ async def analyze_repo_endpoint(request: RepoAnalysisRequest):
 
 @app.post("/analyze-goal", response_model=LearningAnalysisResponse)
 async def analyze_goal_endpoint(request: LearningAnalysisRequest):
-    """Goal-based insights endpoint"""
     try:
         loop = asyncio.get_event_loop()
         analysis = await loop.run_in_executor(
@@ -658,86 +459,18 @@ async def analyze_goal_endpoint(request: LearningAnalysisRequest):
             request.goal_title,
             request.category,
             request.current_progress,
-            request.difficulty_level
+            request.description,
+            request.chat_history
         )
         if not analysis or not isinstance(analysis, dict) or "suggestions" not in analysis:
-            logger.warning("Goal analysis dict missing or invalid, using fallback.")
-            analysis = {
-                "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
-                "next_steps": ["Review fundamentals", "Build a small project"],
-                "estimated_time": "Varies based on complexity",
-                "resources": ["Documentation", "Online tutorials"]
-            }
+            logger.error("AI analysis not available for goal.")
+            raise HTTPException(status_code=503, detail="AI analysis not available for goal.")
         logger.info(f"Final LearningAnalysisResponse: {analysis}")
         return LearningAnalysisResponse(**analysis)
     except Exception as e:
         logger.error(f"Goal analysis error: {str(e)}")
         logger.warning("Exception in goal endpoint, using fallback.")
         return LearningAnalysisResponse(
-            suggestions=["Keep practicing consistently", "Break complex topics into smaller parts"],
-            next_steps=["Review fundamentals", "Build a small project"],
-            estimated_time="Varies based on complexity",
-            resources=["Documentation", "Online tutorials"]
-        )
-
-@app.post("/analyze-github", response_model=GitHubInsightsResponse)
-async def analyze_github_endpoint(request: GitHubAnalysisRequest):
-    """GitHub profile insights endpoint"""
-    try:
-        loop = asyncio.get_event_loop()
-        analysis = await loop.run_in_executor(
-            executor,
-            analyze_github_data,
-            request
-        )
-        if not analysis or not isinstance(analysis, dict) or "skill_analysis" not in analysis:
-            logger.warning("GitHub analysis dict missing or invalid, using fallback.")
-            analysis = {
-                "skill_analysis": {"primary_languages": ["JavaScript"], "experience_level": "beginner", "strengths": [], "areas_to_improve": []},
-                "learning_suggestions": ["Start with fundamental programming concepts"],
-                "project_insights": ["Build more projects to showcase skills"],
-                "recommended_goals": [{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
-                "coding_patterns": {"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
-            }
-        logger.info(f"Final GitHubInsightsResponse: {analysis}")
-        return GitHubInsightsResponse(**analysis)
-    except Exception as e:
-        logger.error(f"GitHub profile analysis error: {str(e)}")
-        logger.warning("Exception in github endpoint, using fallback.")
-        return GitHubInsightsResponse(
-            skill_analysis={"primary_languages": ["JavaScript"], "experience_level": "beginner", "strengths": [], "areas_to_improve": []},
-            learning_suggestions=["Start with fundamental programming concepts"],
-            project_insights=["Build more projects to showcase skills"],
-            recommended_goals=[{"title": "Learn programming basics", "category": "Fundamentals", "description": "Master core concepts", "priority": "high"}],
-            coding_patterns={"commit_frequency": "low", "project_variety": "limited", "code_quality_indicators": []}
-        )
-
-@app.post("/analyze-goal", response_model=GoalAnalysisResponse)
-async def analyze_goal_structured_endpoint(request: GoalAnalysisRequest):
-    """Goal-based insights endpoint (structured, with github data)"""
-    try:
-        loop = asyncio.get_event_loop()
-        analysis = await loop.run_in_executor(
-            executor,
-            analyze_goal_structured,
-            request.goal,
-            request.github_data,
-            request.username
-        )
-        if not analysis or not isinstance(analysis, dict) or "suggestions" not in analysis:
-            logger.warning("Goal analysis dict missing or invalid, using fallback.")
-            analysis = {
-                "suggestions": ["Keep practicing consistently", "Break complex topics into smaller parts"],
-                "next_steps": ["Review fundamentals", "Build a small project"],
-                "estimated_time": "Varies based on complexity",
-                "resources": ["Documentation", "Online tutorials"]
-            }
-        logger.info(f"Final GoalAnalysisResponse: {analysis}")
-        return GoalAnalysisResponse(**analysis)
-    except Exception as e:
-        logger.error(f"Goal analysis error: {str(e)}")
-        logger.warning("Exception in goal endpoint, using fallback.")
-        return GoalAnalysisResponse(
             suggestions=["Keep practicing consistently", "Break complex topics into smaller parts"],
             next_steps=["Review fundamentals", "Build a small project"],
             estimated_time="Varies based on complexity",

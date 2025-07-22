@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
@@ -21,24 +21,28 @@ export function MLInsightsTab({
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
   
+  // Automatically trigger insights generation if not loading and no insights
+  const didAutoRequest = useRef(false);
+  useEffect(() => {
+    if (!mlInsights && !loading && !didAutoRequest.current) {
+      didAutoRequest.current = true;
+      refreshMLInsightsOnly();
+    }
+    if (mlInsights) {
+      didAutoRequest.current = false; // reset for next time
+    }
+  }, [mlInsights, loading, refreshMLInsightsOnly]);
+
   return (
     <ThemedView style={styles.insightsContainer}>
       {mlInsights ? (
         <>
-          <ThemedView style={styles.refreshButtonsContainer}>
-            <TouchableOpacity 
-              onPress={refreshMLInsightsOnly} 
-              style={[styles.fastRefreshButton, { backgroundColor: accentColor }]}
-            >
-              <ThemedText style={styles.refreshButtonText}>🧠 Refresh Insights</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={refreshGitHubDataOnly} 
-              style={[styles.fastRefreshButton, { backgroundColor: successColor }]}
-            >
-              <ThemedText style={styles.refreshButtonText}>📡 Refresh Data</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+          <TouchableOpacity
+            onPress={refreshMLInsightsOnly}
+            style={{ backgroundColor: accentColor, width: '100%', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 16 }}
+          >
+            <ThemedText style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>🧠 Refresh Insights</ThemedText>
+          </TouchableOpacity>
           <MLDeveloperInsights insights={mlInsights} username={username} />
         </>
       ) : (
@@ -50,14 +54,7 @@ export function MLInsightsTab({
           <ThemedText type="body" style={styles.loadingSubtext}>
             Analyzing your GitHub data with AI
           </ThemedText>
-          {!loading && (
-            <TouchableOpacity 
-              onPress={refreshMLInsightsOnly} 
-              style={[styles.retryButton, { backgroundColor: accentColor }]}
-            >
-              <ThemedText style={styles.retryButtonText}>Generate Insights</ThemedText>
-            </TouchableOpacity>
-          )}
+          {/* Button removed: now always auto-triggers, no manual retry button shown */}
         </ThemedView>
       )}
     </ThemedView>
@@ -69,14 +66,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  refreshButtonsContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
-  },
+  // refreshButtonsContainer removed
   fastRefreshButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',

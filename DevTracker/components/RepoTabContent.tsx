@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
-import { UserProfileCard } from './UserProfileCard';
 import { RepoList } from './RepoList';
+import { formatTimeAgo } from './formatTimeAgo';
 import { Button, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 import { RepoAnalysisModal } from './RepoAnalysisModal';
 import { fetchRepoCommits, fetchRepoLanguages, fetchRepoReadme } from '../services/github';
+import { useThemeColor } from '../hooks/useThemeColor';
 
 export function RepoTabContent({
   user,
@@ -62,14 +63,20 @@ export function RepoTabContent({
 
   return (
     <ThemedView style={{ flex: 1, paddingHorizontal: 16 }}>
-      <UserProfileCard
-        user={user}
-        lastFetched={lastFetched}
-        subtleTextColor={subtleTextColor}
-        refreshData={refreshData}
-      />
+      {/* Last updated time only, human readable */}
+      {lastFetched && (
+        <ThemedText style={{ color: subtleTextColor, marginBottom: 12, marginTop: 8, textAlign: 'center' }}>
+          Last updated: {formatTimeAgo(lastFetched)}
+        </ThemedText>
+      )}
+      <TouchableOpacity
+        onPress={refreshData}
+        style={{ backgroundColor: accentColor, width: '100%', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 16 }}
+      >
+        <ThemedText style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>📡 Refresh Data</ThemedText>
+      </TouchableOpacity>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-        Recent Repositories ({repos.length})
+        Recent Repositories
       </ThemedText>
       <RepoList
         repos={repos}
@@ -81,31 +88,12 @@ export function RepoTabContent({
         renderExtraActions={(repo: any) => (
           <TouchableOpacity
             style={styles.analyseButton}
-            onPress={() => handleAnalyseRepo(repo)}
-            disabled={analysisLoading}
+            onPress={() => router.push({ pathname: '/repo-details', params: { repoName: repo.name, autoAnalyze: '1' } })}
           >
-            <ThemedText style={styles.analyseButtonText}>
-              {analysisLoading && selectedRepo?.name === repo.name && showAnalysis
-                ? 'Analysing...'
-                : '🔎 Analyse Repo'}
-            </ThemedText>
+            <ThemedText style={styles.analyseButtonText}>🔎 Analyse Repo</ThemedText>
           </TouchableOpacity>
         )}
       />
-      {showAnalysis && selectedRepo && (
-        <Modal
-          visible={showAnalysis}
-          animationType="slide"
-          onRequestClose={() => setShowAnalysis(false)}
-          transparent={true}
-        >
-          <RepoAnalysisModal
-            repo={selectedRepo}
-            username={user?.login}
-            onClose={() => setShowAnalysis(false)}
-          />
-        </Modal>
-      )}
     </ThemedView>
   );
 }

@@ -1,3 +1,60 @@
+// --- Goal Chat History ---
+const GOAL_CHAT_HISTORY_KEY = (goalId: string) => `DEVTRACKER_GOAL_CHAT_${goalId}`;
+export type ChatTurn = { role: "user" | "ai"; message: string };
+
+export async function setGoalChatHistory(goalId: string, chatHistory: ChatTurn[]): Promise<void> {
+  const trimmed = chatHistory.slice(-10); // keep only last 10 turns
+  await AsyncStorage.setItem(GOAL_CHAT_HISTORY_KEY(goalId), JSON.stringify(trimmed));
+}
+
+export async function getGoalChatHistory(goalId: string): Promise<ChatTurn[]> {
+  const raw = await AsyncStorage.getItem(GOAL_CHAT_HISTORY_KEY(goalId));
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as ChatTurn[];
+  } catch {
+    return [];
+  }
+}
+
+export async function clearGoalChatHistory(goalId: string): Promise<void> {
+  await AsyncStorage.removeItem(GOAL_CHAT_HISTORY_KEY(goalId));
+}
+// --- GitHub Stats Image Cache ---
+const GITHUB_STATS_IMAGE_KEY = 'DEVTRACKER_GITHUB_STATS_IMAGE';
+export interface GitHubStatsImageCache {
+  username: string;
+  statsImageUrl: string;
+  languagesImageUrl: string;
+  timestamp: number;
+}
+
+export async function getCachedGitHubStatsImage(username: string): Promise<GitHubStatsImageCache | null> {
+  try {
+    const cached = await AsyncStorage.getItem(GITHUB_STATS_IMAGE_KEY);
+    if (!cached) return null;
+    const data: GitHubStatsImageCache = JSON.parse(cached);
+    if (data.username !== username) return null;
+    return data;
+  } catch (error) {
+    console.error('Error reading GitHub stats image cache:', error);
+    return null;
+  }
+}
+
+export async function setCachedGitHubStatsImage(username: string, statsImageUrl: string, languagesImageUrl: string): Promise<void> {
+  try {
+    const cacheData: GitHubStatsImageCache = {
+      username,
+      statsImageUrl,
+      languagesImageUrl,
+      timestamp: Date.now()
+    };
+    await AsyncStorage.setItem(GITHUB_STATS_IMAGE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Error saving GitHub stats image cache:', error);
+  }
+}
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GitHubUser } from '../services/github';
 import { MLDeveloperInsights } from '../services/mlAnalytics';
@@ -35,14 +92,10 @@ export async function getCachedGitHubData(username: string): Promise<GitHubCache
   try {
     const cached = await AsyncStorage.getItem(GITHUB_CACHE_KEY);
     if (!cached) return null;
-    
     const data: GitHubCache = JSON.parse(cached);
-    const isExpired = Date.now() - data.timestamp > CACHE_DURATION;
-    
-    if (isExpired || data.username !== username) {
+    if (data.username !== username) {
       return null;
     }
-    
     return data;
   } catch (error) {
     console.error('Error reading GitHub cache:', error);
@@ -56,7 +109,7 @@ export async function setCachedGitHubData(username: string, repos: any[], userPr
       username,
       repos,
       userProfile,
-      timestamp: Date.now()
+      timestamp: Date.now() // timestamp kept for legacy, not used for expiration
     };
     await AsyncStorage.setItem(GITHUB_CACHE_KEY, JSON.stringify(cacheData));
   } catch (error) {
@@ -113,8 +166,7 @@ export async function setCachedUserProfile(username: string, profile: GitHubUser
   try {
     const cacheKey = `user_profile_${username}`;
     const cacheData = {
-      profile,
-      timestamp: new Date().toISOString()
+      profile
     };
     await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
     console.log('👤 User profile cached successfully');
@@ -127,17 +179,11 @@ export async function getCachedUserProfile(username: string): Promise<GitHubUser
   try {
     const cacheKey = `user_profile_${username}`;
     const cached = await AsyncStorage.getItem(cacheKey);
-    
     if (cached) {
-      const { profile, timestamp } = JSON.parse(cached);
-      const cacheAge = Date.now() - new Date(timestamp).getTime();
-      
-      if (cacheAge < 60 * 60 * 1000) {
-        console.log('👤 Using cached user profile');
-        return profile;
-      }
+      const { profile } = JSON.parse(cached);
+      console.log('👤 Using cached user profile');
+      return profile;
     }
-    
     return null;
   } catch (error) {
     console.error('Failed to get cached user profile:', error);

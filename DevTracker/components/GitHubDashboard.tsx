@@ -1,5 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { setGitHubToken } from '../services/github';
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
@@ -35,7 +37,12 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
   const router = useRouter();
 
   useEffect(() => {
-    loadGitHubData();
+    const initTokenAndLoad = async () => {
+      const token = await SecureStore.getItemAsync('github_access_token');
+      if (token) setGitHubToken(token);
+      await loadGitHubData();
+    };
+    initTokenAndLoad();
   }, [username]);
 
   const loadGitHubData = async () => {
@@ -251,10 +258,9 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 
   const colorScheme = useColorScheme();
   const cardBg = useThemeColor({}, 'card');
-  const repoItemBg = useThemeColor({}, 'surface');
   const subtleTextColor = useThemeColor({}, 'secondary');
   const dateTextColor = useThemeColor({}, 'secondary');
-  const tabBg = useThemeColor({}, 'surface');
+  const tabBg = useThemeColor({}, 'card');
   const accentColor = useThemeColor({}, 'tint');
 
   console.log('🎯 Render state:', {
@@ -295,7 +301,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           onPress={() => setActiveTab('repos')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'repos' && styles.activeTabText]}>
-            📁 Repositories ({repos.length})
+            📁 Repositories
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -316,8 +322,6 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           lastFetched={lastFetched}
           projectTypes={projectTypes}
           loading={loading}
-          cardBg={cardBg}
-          repoItemBg={repoItemBg}
           subtleTextColor={subtleTextColor}
           dateTextColor={dateTextColor}
           refreshData={refreshData}

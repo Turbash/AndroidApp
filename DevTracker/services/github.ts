@@ -1,5 +1,71 @@
+// Fetch all text/code files in a repo (up to a size limit), concatenate them, and return as a string
+export async function fetchAllRepoCode(username: string, repoName: string, branch: string = 'main', maxTotalBytes: number = 40000): Promise<string> {
+  try {
+    const encodedUsername = encodeURIComponent(username.trim());
+    const encodedRepoName = encodeURIComponent(repoName.trim());
+    // Get the repo tree recursively
+    const treeUrl = `${GITHUB_API_BASE}/repos/${encodedUsername}/${encodedRepoName}/git/trees/${branch}?recursive=1`;
+    const treeResp = await fetchWithAuth(treeUrl);
+    if (!treeResp.ok) {
+      console.log(`❌ Repo tree API failed with status: ${treeResp.status}`);
+      return '';
+    }
+    const treeData = await treeResp.json();
+    if (!treeData.tree) return '';
+    // Filter for text/code files (exclude binaries/images by extension)
+    const textExtensions = ['.js', '.ts', '.py', '.java', '.go', '.rb', '.cpp', '.c', '.h', '.cs', '.php', '.rs', '.swift', '.kt', '.m', '.json', '.yml', '.yaml', '.md', '.txt', '.sh', '.pl', '.rb', '.html', '.css', '.scss', '.tsx', '.jsx'];
+    const files = treeData.tree.filter((item: any) => item.type === 'blob' && textExtensions.some(ext => item.path.endsWith(ext)));
+    let totalBytes = 0;
+    let codeConcat = '';
+    for (const file of files) {
+      if (totalBytes > maxTotalBytes) break;
+      const fileUrl = `${GITHUB_API_BASE}/repos/${encodedUsername}/${encodedRepoName}/contents/${encodeURIComponent(file.path)}`;
+      const fileResp = await fetchWithAuth(fileUrl);
+      if (!fileResp.ok) continue;
+      const fileData = await fileResp.json();
+      let content = '';
+      if (fileData.encoding === 'base64') {
+        content = atob(fileData.content.replace(/\n/g, ''));
+      } else {
+        content = fileData.content || '';
+      }
+      // Add file header for clarity
+      codeConcat += `\n// --- ${file.path} ---\n` + content;
+      totalBytes += content.length;
+    }
+    return codeConcat;
+  } catch (error) {
+    console.error(`💥 Error fetching all code for ${repoName}:`, error);
+    return '';
+  }
+}
+// Fetch a code file (e.g., main file or first file in repo) for analysis
+export async function fetchRepoCodeSample(username: string, repoName: string, filePath: string = 'README.md'): Promise<string | null> {
+  try {
+    const encodedUsername = encodeURIComponent(username.trim());
+    const encodedRepoName = encodeURIComponent(repoName.trim());
+    const encodedFilePath = encodeURIComponent(filePath);
+    const url = `${GITHUB_API_BASE}/repos/${encodedUsername}/${encodedRepoName}/contents/${encodedFilePath}`;
+    const response = await fetchWithAuth(url);
+    if (!response.ok) {
+      console.log(`❌ Code file API failed with status: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    if (data.encoding === 'base64') {
+      const content = atob(data.content.replace(/\n/g, ''));
+      return content;
+    }
+    return data.content || null;
+  } catch (error) {
+    console.error(`💥 Error fetching code file for ${repoName}:`, error);
+    return null;
+  }
+}
 import Constants from 'expo-constants';
 import { getCachedUserProfile, setCachedUserProfile, getCachedRepoData, setCachedRepoData } from '../utils/storage';
+
+export { getCachedUserProfile };
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
