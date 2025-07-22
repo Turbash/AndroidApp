@@ -1,8 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { MLDeveloperInsights } from './MLDeveloperInsights';
+import { useThemeColor } from '../hooks/useThemeColor';
 
 export function MLInsightsTab({
   mlInsights,
@@ -17,29 +18,44 @@ export function MLInsightsTab({
   refreshMLInsightsOnly: () => void;
   refreshGitHubDataOnly: () => void;
 }) {
+  const accentColor = useThemeColor({}, 'tint');
+  const successColor = useThemeColor({}, 'success');
+  
   return (
     <ThemedView style={styles.insightsContainer}>
       {mlInsights ? (
         <>
           <ThemedView style={styles.refreshButtonsContainer}>
-            <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.fastRefreshButton}>
+            <TouchableOpacity 
+              onPress={refreshMLInsightsOnly} 
+              style={[styles.fastRefreshButton, { backgroundColor: accentColor }]}
+            >
               <ThemedText style={styles.refreshButtonText}>🧠 Refresh Insights</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={refreshGitHubDataOnly} style={styles.fastRefreshButton}>
+            <TouchableOpacity 
+              onPress={refreshGitHubDataOnly} 
+              style={[styles.fastRefreshButton, { backgroundColor: successColor }]}
+            >
               <ThemedText style={styles.refreshButtonText}>📡 Refresh Data</ThemedText>
             </TouchableOpacity>
           </ThemedView>
           <MLDeveloperInsights insights={mlInsights} username={username} />
         </>
       ) : (
-        <ThemedView style={styles.loadingContainer}>
-          <ThemedText>🤖 Generating ML insights...</ThemedText>
-          <ThemedText style={styles.loadingSubtext}>
-            Using parallel processing for faster analysis
+        <ThemedView variant="card" style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={accentColor} style={styles.loadingSpinner} />
+          <ThemedText type="subtitle" style={styles.loadingTitle}>
+            🤖 Generating ML insights...
+          </ThemedText>
+          <ThemedText type="body" style={styles.loadingSubtext}>
+            Analyzing your GitHub data with AI
           </ThemedText>
           {!loading && (
-            <TouchableOpacity onPress={refreshMLInsightsOnly} style={styles.retryButton}>
-              <ThemedText style={{ color: 'white' }}>Generate Insights</ThemedText>
+            <TouchableOpacity 
+              onPress={refreshMLInsightsOnly} 
+              style={[styles.retryButton, { backgroundColor: accentColor }]}
+            >
+              <ThemedText style={styles.retryButtonText}>Generate Insights</ThemedText>
             </TouchableOpacity>
           )}
         </ThemedView>
@@ -55,39 +71,47 @@ const styles = StyleSheet.create({
   },
   refreshButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 16,
     gap: 8,
   },
   fastRefreshButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: 'center',
   },
   refreshButtonText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
   },
   loadingContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 48,
+    margin: 16,
   },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    opacity: 0.7,
+  loadingSpinner: {
+    marginBottom: 24,
+  },
+  loadingTitle: {
+    marginBottom: 8,
     textAlign: 'center',
   },
+  loadingSubtext: {
+    opacity: 0.7,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
   retryButton: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

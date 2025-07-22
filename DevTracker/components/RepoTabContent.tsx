@@ -14,8 +14,6 @@ export function RepoTabContent({
   lastFetched,
   projectTypes,
   loading,
-  cardBg,
-  repoItemBg,
   subtleTextColor,
   dateTextColor,
   refreshData,
@@ -25,8 +23,6 @@ export function RepoTabContent({
   lastFetched: Date | null;
   projectTypes: Record<string, string>;
   loading: boolean;
-  cardBg: string;
-  repoItemBg: string;
   subtleTextColor: string;
   dateTextColor: string;
   refreshData: () => void;
@@ -35,6 +31,7 @@ export function RepoTabContent({
   const [selectedRepo, setSelectedRepo] = useState<any | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const accentColor = useThemeColor({}, 'tint');
 
   const handleAnalyseRepo = async (repo: any) => {
     setAnalysisLoading(true);
@@ -68,17 +65,15 @@ export function RepoTabContent({
       <UserProfileCard
         user={user}
         lastFetched={lastFetched}
-        cardBg={cardBg}
         subtleTextColor={subtleTextColor}
         refreshData={refreshData}
       />
-      <ThemedText type="defaultSemiBold" style={{ marginBottom: 12 }}>
+      <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         Recent Repositories ({repos.length})
       </ThemedText>
       <RepoList
         repos={repos}
         projectTypes={projectTypes}
-        repoItemBg={repoItemBg}
         subtleTextColor={subtleTextColor}
         dateTextColor={dateTextColor}
         loading={loading}
@@ -116,17 +111,20 @@ export function RepoTabContent({
 }
 
 const styles = StyleSheet.create({
+  sectionTitle: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
   analyseButton: {
-    marginTop: 8,
-    backgroundColor: '#007AFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: '#6366f1',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   analyseButtonText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

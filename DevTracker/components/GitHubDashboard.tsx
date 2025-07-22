@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useThemeColor } from '../hooks/useThemeColor';
 import {
@@ -250,11 +250,12 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
   };
 
   const colorScheme = useColorScheme();
-  const cardBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
-  const repoItemBg = useThemeColor({ light: '#f9f9f9', dark: '#333' }, 'background');
-  const subtleTextColor = colorScheme === 'dark' ? '#999' : '#666';
-  const dateTextColor = colorScheme === 'dark' ? '#666' : '#888';
-  const tabBg = useThemeColor({ light: '#f0f0f0', dark: '#333' }, 'background');
+  const cardBg = useThemeColor({}, 'card');
+  const repoItemBg = useThemeColor({}, 'surface');
+  const subtleTextColor = useThemeColor({}, 'secondary');
+  const dateTextColor = useThemeColor({}, 'secondary');
+  const tabBg = useThemeColor({}, 'surface');
+  const accentColor = useThemeColor({}, 'tint');
 
   console.log('🎯 Render state:', {
     loading,
@@ -266,18 +267,19 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 
   if (loading) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText>Loading GitHub data...</ThemedText>
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={accentColor} />
+        <ThemedText type="body" style={styles.loadingText}>Loading GitHub data...</ThemedText>
       </ThemedView>
     );
   }
 
   if (!user) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText>Failed to load GitHub data</ThemedText>
-        <TouchableOpacity onPress={loadGitHubData} style={styles.retryButton}>
-          <ThemedText>Retry</ThemedText>
+      <ThemedView style={styles.errorContainer}>
+        <ThemedText type="subtitle" style={styles.errorTitle}>Failed to load GitHub data</ThemedText>
+        <TouchableOpacity onPress={loadGitHubData} style={[styles.retryButton, { backgroundColor: accentColor }]}>
+          <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -285,14 +287,11 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText style={styles.debugText}>
-        User: {user?.login || 'None'} | Repos: {repos.length} | Tab: {activeTab} | ML: {mlInsights ? 'Ready' : 'Loading'}
-      </ThemedText>
 
       {/* Tab Navigation */}
       <ThemedView style={[styles.tabContainer, { backgroundColor: tabBg }]}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'repos' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'repos' && { backgroundColor: accentColor }]}
           onPress={() => setActiveTab('repos')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'repos' && styles.activeTabText]}>
@@ -300,7 +299,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'insights' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'insights' && { backgroundColor: accentColor }]}
           onPress={() => setActiveTab('insights')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'insights' && styles.activeTabText]}>
@@ -339,98 +338,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginVertical: 16,
-  },
-  debugText: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: 'white',
-  },
-  reposContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  insightsContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  userContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 8,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  sectionTitle: {
-    marginBottom: 12,
-  },
-  reposList: {
-    flex: 1,
-  },
-  repoItem: {
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 6,
-  },
-  repoName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  repoLanguage: {
-    fontSize: 12,
-  },
-  repoDescription: {
-    marginTop: 4,
-    fontSize: 14,
-  },
-  repoDate: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  projectType: {
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  cacheInfo: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  refreshButton: {
-    padding: 8,
+    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -438,41 +346,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    opacity: 0.7,
+  loadingText: {
+    marginTop: 16,
     textAlign: 'center',
   },
-  retryButton: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#007AFF',
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorTitle: {
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
-  emptyState: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    opacity: 0.7,
-    padding: 20,
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  refreshButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
+  activeTabText: {
+    color: 'white',
   },
-  fastRefreshButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
   },
-  refreshButtonText: {
+  retryButtonText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

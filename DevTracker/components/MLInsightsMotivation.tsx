@@ -3,13 +3,13 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
-export function MLInsightsMotivation({ motivation, cardBg, accentColor }: { motivation: string; cardBg: string; accentColor: string }) {
+export function MLInsightsMotivation({ motivation, accentColor }: { motivation: string; accentColor: string }) {
   return (
-    <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
+    <ThemedView variant="card" style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         💡 Motivation
       </ThemedText>
-      <ThemedText style={{ fontStyle: 'italic', color: accentColor }}>
+      <ThemedText type="body" style={[styles.motivationText, { color: accentColor }]}>
         {motivation}
       </ThemedText>
     </ThemedView>
@@ -18,12 +18,16 @@ export function MLInsightsMotivation({ motivation, cardBg, accentColor }: { moti
 
 const styles = StyleSheet.create({
   section: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
     marginBottom: 12,
+  },
+  motivationText: {
+    fontStyle: 'italic',
+    lineHeight: 22,
+    fontWeight: '500',
   },
 });

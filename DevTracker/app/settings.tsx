@@ -1,13 +1,10 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
-import { useThemeColor } from '../hooks/useThemeColor';
 import { clearGitHubCache, getGitHubUsername, logoutUser } from '../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SettingButton } from '../components/SettingButton'
-import { InfoCard } from '../components/InfoCard';
 import { AccountSection } from '../components/AccountSection';
 import { DataSection } from '../components/DataSection';
 import { AboutSection } from '../components/AboutSection';
@@ -58,9 +55,15 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollContainer}>
-      <SafeAreaView style={styles.container}>
-        <ThemedText type="title">Settings</ThemedText>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <ThemedText type="title">⚙️ Settings</ThemedText>
+        <ThemedText type="body" style={styles.headerSubtitle}>
+          Manage your account and preferences
+        </ThemedText>
+      </View>
+      
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <AccountSection
           githubUsername={githubUsername}
           onLogout={handleLogout}
@@ -68,45 +71,28 @@ export default function SettingsScreen() {
         />
         <DataSection onClearCache={handleClearCache} />
         <AboutSection />
-      </SafeAreaView>
-    </ScrollView>
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 24,
+    paddingBottom: 16,
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    opacity: 0.7,
+  },
   scrollContainer: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-  section: {
-    marginVertical: 16,
-  },
-  sectionTitle: {
-    marginBottom: 12,
-  },
-  infoCard: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  settingButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  chevron: {
-    fontSize: 18,
-    opacity: 0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginTop: 4,
+  bottomPadding: {
+    height: 24,
   },
 });

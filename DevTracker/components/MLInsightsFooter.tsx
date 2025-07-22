@@ -2,12 +2,20 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
+import { useThemeColor } from '../hooks/useThemeColor';
 
-export function MLInsightsFooter({ aiSuccess, source, cardBg }: { aiSuccess: boolean; source: string; cardBg: string }) {
+export function MLInsightsFooter({ aiSuccess, source }: { aiSuccess: boolean; source: string }) {
+  const successColor = useThemeColor({}, 'success');
+  const errorColor = useThemeColor({}, 'error');
+  
   return (
-    <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
-      <ThemedText style={{ fontSize: 12, opacity: 0.7 }}>
-        AI Success: {aiSuccess ? "Yes" : "No"} | Source: {source}
+    <ThemedView variant="surface" style={styles.section}>
+      <ThemedText type="caption" style={styles.footerText}>
+        AI Status: 
+        <ThemedText style={[styles.statusText, { color: aiSuccess ? successColor : errorColor }]}>
+          {aiSuccess ? " ✅ Success" : " ❌ Failed"}
+        </ThemedText>
+        {" | Source: " + source}
       </ThemedText>
     </ThemedView>
   );
@@ -15,8 +23,16 @@ export function MLInsightsFooter({ aiSuccess, source, cardBg }: { aiSuccess: boo
 
 const styles = StyleSheet.create({
   section: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  footerText: {
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  statusText: {
+    fontWeight: '600',
   },
 });

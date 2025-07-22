@@ -3,25 +3,27 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
-export function MLInsightsSummary({ summary, cardBg }: { summary: string; cardBg: string }) {
+export function MLInsightsSummary({ summary }: { summary: string }) {
   return (
-    <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
+    <ThemedView variant="card" style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         📝 AI Summary
       </ThemedText>
-      <ThemedText style={{ marginBottom: 8 }}>{summary}</ThemedText>
+      <ThemedText type="body" style={styles.summaryText}>{summary}</ThemedText>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
     marginBottom: 12,
+  },
+  summaryText: {
+    lineHeight: 22,
   },
 });

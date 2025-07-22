@@ -4,15 +4,15 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { AIUnavailableState } from './AIUnavailableState';
 
-export function MLInsightsImprovements({ improvementAreas, cardBg }: { improvementAreas: string[]; cardBg: string }) {
+export function MLInsightsImprovements({ improvementAreas }: { improvementAreas: string[] }) {
   return (
-    <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
+    <ThemedView variant="card" style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         🛠️ Areas to Improve
       </ThemedText>
       {Array.isArray(improvementAreas) && improvementAreas.length > 0
         ? improvementAreas.map((s: string, i: number) => (
-            <ThemedText key={i} style={{ marginLeft: 8, marginBottom: 2 }}>• {s}</ThemedText>
+            <ThemedText key={i} type="body" style={styles.listItem}>• {s}</ThemedText>
           ))
         : <AIUnavailableState title="Improvement areas unavailable" description="No improvement areas provided by AI." icon="🛠️" />}
     </ThemedView>
@@ -21,12 +21,16 @@ export function MLInsightsImprovements({ improvementAreas, cardBg }: { improveme
 
 const styles = StyleSheet.create({
   section: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
     marginBottom: 12,
+  },
+  listItem: {
+    marginLeft: 8,
+    marginBottom: 6,
+    lineHeight: 20,
   },
 });

@@ -4,23 +4,35 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { AIUnavailableState } from './AIUnavailableState';
 
-export function MLInsightsLearningPath({ learningPath, cardBg }: { learningPath: any[]; cardBg: string }) {
+export function MLInsightsLearningPath({ learningPath }: { learningPath: any[] }) {
   return (
-    <ThemedView style={[styles.section, { backgroundColor: cardBg }]}>
+    <ThemedView variant="card" style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         📚 Learning Path
       </ThemedText>
       {Array.isArray(learningPath) && learningPath.length > 0
         ? learningPath.map((item: any, i: number) => (
             typeof item === 'string'
-              ? <ThemedText key={i} style={{ marginLeft: 8, marginBottom: 2 }}>• {item}</ThemedText>
+              ? <ThemedText key={i} type="body" style={styles.listItem}>• {item}</ThemedText>
               : (
-                <ThemedView key={i} style={{ marginBottom: 8, marginLeft: 8 }}>
-                  <ThemedText style={{ fontWeight: 'bold' }}>Skill: {item.skill}</ThemedText>
-                  <ThemedText>Priority: {item.priority}</ThemedText>
-                  <ThemedText>Estimated Hours: {item.hours}</ThemedText>
-                  <ThemedText>Difficulty: {item.difficulty}</ThemedText>
-                  {item.reasoning ? <ThemedText>Reasoning: {item.reasoning}</ThemedText> : null}
+                <ThemedView key={i} variant="surface" style={styles.pathItem}>
+                  <ThemedText type="defaultSemiBold" style={styles.skillTitle}>
+                    {item.skill}
+                  </ThemedText>
+                  <ThemedText type="body" style={styles.pathDetail}>
+                    Priority: {item.priority}
+                  </ThemedText>
+                  <ThemedText type="body" style={styles.pathDetail}>
+                    Estimated Hours: {item.hours}
+                  </ThemedText>
+                  <ThemedText type="body" style={styles.pathDetail}>
+                    Difficulty: {item.difficulty}
+                  </ThemedText>
+                  {item.reasoning && (
+                    <ThemedText type="caption" style={styles.reasoning}>
+                      {item.reasoning}
+                    </ThemedText>
+                  )}
                 </ThemedView>
               )
           ))
@@ -31,12 +43,32 @@ export function MLInsightsLearningPath({ learningPath, cardBg }: { learningPath:
 
 const styles = StyleSheet.create({
   section: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
     marginBottom: 12,
+  },
+  listItem: {
+    marginLeft: 8,
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  pathItem: {
+    padding: 16,
+    marginBottom: 12,
+    marginLeft: 8,
+  },
+  skillTitle: {
+    marginBottom: 8,
+  },
+  pathDetail: {
+    marginBottom: 4,
+  },
+  reasoning: {
+    marginTop: 8,
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
 });

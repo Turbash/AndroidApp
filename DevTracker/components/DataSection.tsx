@@ -1,26 +1,27 @@
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { ThemedText } from './ThemedText';
-import { ThemedView } from './ThemedView';
 import { SettingButton } from './SettingButton';
-import { StyleSheet } from 'react-native';
 
 export function DataSection({ onClearCache }: { onClearCache: () => void }) {
   return (
-    <ThemedView style={styles.section}>
+    <View style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Data</ThemedText>
       <SettingButton
         title="Clear Cache"
+        subtitle="Clear all cached GitHub data"
         onPress={onClearCache}
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    marginVertical: 16,
+    marginBottom: 24,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
 });

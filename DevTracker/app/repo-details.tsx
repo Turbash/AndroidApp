@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Button, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, View } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useColorScheme } from '../hooks/useColorScheme';
@@ -11,7 +11,6 @@ import { GitHubCommit } from '../services/github';
 import { RepoAnalysisResponse } from '../services/mlModels';
 import { getCachedRepoData, getGitHubUsername, setCachedRepoData } from '../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { InfoCard } from '../components/InfoCard';
 import { RepoLanguages } from '../components/RepoLanguages';
 import { RepoReadmePreview } from '../components/RepoReadmePreview';
 import { RepoCommitsList } from '../components/RepoCommitsList';
@@ -30,13 +29,15 @@ export default function RepoDetailsScreen() {
   const [analysis, setAnalysis] = useState<RepoAnalysisResponse | null>(null);
 
   const colorScheme = useColorScheme();
-  const cardBg = useThemeColor({ light: '#f9f9f9', dark: '#333' }, 'background');
-  const subtleTextColor = colorScheme === 'dark' ? '#999' : '#666';
+  const subtleTextColor = useThemeColor({}, 'secondary');
+  const accentColor = useThemeColor({}, 'tint');
+  const successColor = useThemeColor({}, 'success');
 
   useEffect(() => {
     console.log('RepoDetailsScreen mounted with repoName:', repoName);
     loadRepoData();
   }, [repoName]);
+  
   const loadRepoData = async () => {
     try {
       setError(null);
@@ -133,10 +134,13 @@ export default function RepoDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ThemedText>Loading repository data...</ThemedText>
-        <ThemedText style={{ marginTop: 8, fontSize: 14, opacity: 0.7 }}>
-          Repository: {repoName}
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={accentColor} />
+        <ThemedText type="subtitle" style={styles.loadingTitle}>
+          Loading Repository
+        </ThemedText>
+        <ThemedText type="body" style={styles.loadingSubtitle}>
+          {repoName}
         </ThemedText>
       </SafeAreaView>
     );
@@ -144,10 +148,16 @@ export default function RepoDetailsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ThemedText type="title">Error</ThemedText>
-        <ThemedText style={{ marginVertical: 16 }}>{error}</ThemedText>
-        <Button title="Retry" onPress={loadRepoData} />
+      <SafeAreaView style={styles.errorContainer}>
+        <ThemedText style={styles.errorIcon}>⚠️</ThemedText>
+        <ThemedText type="subtitle" style={styles.errorTitle}>Error</ThemedText>
+        <ThemedText type="body" style={styles.errorMessage}>{error}</ThemedText>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: accentColor }]}
+          onPress={loadRepoData}
+        >
+          <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -155,65 +165,97 @@ export default function RepoDetailsScreen() {
   return (
     <ScrollView style={styles.scrollContainer}>
       <SafeAreaView style={styles.container}>
-        <ThemedText type="title">{repoName}</ThemedText>
+        {/* Header */}
+        <ThemedView variant="card" style={styles.header}>
+          <ThemedText type="title" style={styles.repoTitle}>{repoName}</ThemedText>
+          <ThemedText type="body" style={[styles.repoOwner, { color: subtleTextColor }]}>
+            @{username}
+          </ThemedText>
+          
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: accentColor }]}
+              onPress={() => openBrowserAsync(`https://github.com/${username}/${repoName}`)}
+            >
+              <ThemedText style={styles.actionButtonText}>🔗 View on GitHub</ThemedText>
+            </TouchableOpacity>
+            
+            {!showAnalysis && (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: successColor }]}
+                onPress={handleAnalyseRepo}
+                disabled={analysisLoading}
+              >
+                <ThemedText style={styles.actionButtonText}>
+                  {analysisLoading ? '⏳ Analyzing...' : '🔎 Analyze Repo'}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ThemedView>
         
-        <Button 
-          title="View on GitHub" 
-          onPress={() => openBrowserAsync(`https://github.com/${username}/${repoName}`)}
-        />
 
-        {/* Analyse Repo Button */}
-        {!showAnalysis && (
-          <Button
-            title="🔎 Analyse This Repo"
-            onPress={handleAnalyseRepo}
-            disabled={analysisLoading}
-          />
-        )}
 
         {/* Repo Analysis Display */}
         {showAnalysis && (
-          <ThemedView style={{ marginTop: 20 }}>
+          <ThemedView variant="card" style={styles.analysisContainer}>
+            <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+              🤖 AI Analysis
+            </ThemedText>
             {analysisLoading ? (
-              <ThemedText>Analysing repo...</ThemedText>
+              <View style={styles.analysisLoading}>
+                <ActivityIndicator size="large" color={accentColor} />
+                <ThemedText type="body" style={styles.analysisLoadingText}>
+                  Analyzing repository...
+                </ThemedText>
+              </View>
             ) : analysis ? (
               <RepoAnalysisDisplay analysis={analysis} />
             ) : (
-              <ThemedText>Failed to load analysis.</ThemedText>
+              <ThemedText type="body" style={styles.analysisError}>
+                Failed to load analysis.
+              </ThemedText>
             )}
-            <Button title="Close Analysis" onPress={() => setShowAnalysis(false)} />
+            <TouchableOpacity 
+              style={[styles.closeButton, { backgroundColor: subtleTextColor }]}
+              onPress={() => setShowAnalysis(false)}
+            >
+              <ThemedText style={styles.closeButtonText}>Close Analysis</ThemedText>
+            </TouchableOpacity>
           </ThemedView>
         )}
 
         {/* Languages */}
         {!showAnalysis && Object.keys(languages).length > 0 && (
-          <>
+          <ThemedView variant="card" style={styles.section}>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-              Languages Used
+              🗣️ Languages Used
             </ThemedText>
             <RepoLanguages languages={languages} totalBytes={totalBytes} subtleTextColor={subtleTextColor} />
-          </>
+          </ThemedView>
         )}
 
         {/* README Preview */}
         {!showAnalysis && readme && (
-          <>
+          <ThemedView variant="card" style={styles.section}>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-              README Preview
+              📖 README Preview
             </ThemedText>
             <RepoReadmePreview readme={readme} />
-          </>
+          </ThemedView>
         )}
 
         {/* Recent Commits */}
         {!showAnalysis && commits.length > 0 && (
-          <>
+          <ThemedView variant="card" style={styles.section}>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-              Recent Commits ({commits.length})
+              📝 Recent Commits ({commits.length})
             </ThemedText>
             <RepoCommitsList commits={commits} subtleTextColor={subtleTextColor} />
-          </>
+          </ThemedView>
         )}
+        
+        <View style={styles.bottomPadding} />
       </SafeAreaView>
     </ScrollView>
   );
@@ -224,49 +266,118 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    flex: 1,
     padding: 24,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingTitle: {
+    marginTop: 24,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    marginBottom: 24,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  header: {
+    padding: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  repoTitle: {
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  repoOwner: {
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  section: {
+    padding: 20,
+    marginBottom: 16,
+  },
   sectionTitle: {
-    marginTop: 20,
     marginBottom: 12,
   },
-  projectTypeContainer: {
-    padding: 12,
+  analysisContainer: {
+    padding: 20,
+    marginBottom: 16,
+  },
+  analysisLoading: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  analysisLoadingText: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  analysisError: {
+    textAlign: 'center',
+    opacity: 0.7,
+    padding: 20,
+  },
+  closeButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
-    marginVertical: 8,
+    alignSelf: 'center',
   },
-  languagesContainer: {
-    padding: 12,
-    borderRadius: 8,
+  closeButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
-  languageItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  readmeContainer: {
-    padding: 12,
-    borderRadius: 8,
-    maxHeight: 200,
-  },
-  readmeText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  commitItem: {
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 6,
-  },
-  commitMessage: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  commitAuthor: {
-    fontSize: 12,
-  },
-  commitDate: {
-    fontSize: 12,
+  bottomPadding: {
+    height: 24,
   },
 });

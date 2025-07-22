@@ -1,6 +1,8 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useThemeColor } from '../hooks/useThemeColor';
+import { ThemedText } from './ThemedText';
+import { ThemedView } from './ThemedView';
 import { MLInsightsSummary } from './MLInsightsSummary';
 import { MLInsightsMotivation } from './MLInsightsMotivation';
 import { MLInsightsSkillLevel } from './MLInsightsSkillLevel';
@@ -19,22 +21,32 @@ interface MLDeveloperInsightsProps {
 }
 
 export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsProps) {
-  const cardBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
-  const accentColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'text');
+  const accentColor = useThemeColor({}, 'tint');
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <MLInsightsSummary summary={insights.summary} cardBg={cardBg} />
-      <MLInsightsMotivation motivation={insights.motivation_message} cardBg={cardBg} accentColor={accentColor} />
-      <MLInsightsSkillLevel skillLevel={insights.skill_level} topLanguages={insights.top_languages} cardBg={cardBg} />
-      <MLInsightsStrengths strengths={insights.strengths} cardBg={cardBg} />
-      <MLInsightsImprovements improvementAreas={insights.improvement_areas} cardBg={cardBg} />
-      <MLInsightsGoals recommendedGoals={insights.recommended_goals} cardBg={cardBg} />
-      <MLInsightsLearningPath learningPath={insights.learning_path} cardBg={cardBg} />
-      <MLInsightsHours estimatedHours={insights.estimated_hours} cardBg={cardBg} />
-      <MLInsightsProjectComplexity projectComplexity={insights.project_complexity} cardBg={cardBg} />
-      <MLInsightsCodingPatterns codingPatterns={insights.coding_patterns} cardBg={cardBg} />
-      <MLInsightsFooter aiSuccess={insights.ai_success} source={insights.source} cardBg={cardBg} />
+    <View style={styles.container}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title" style={styles.headerTitle}>🤖 AI Insights</ThemedText>
+        <ThemedText type="body" style={styles.headerSubtitle}>
+          Personalized analysis for @{username}
+        </ThemedText>
+      </ThemedView>
+      
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <MLInsightsSummary summary={insights.summary} />
+        <MLInsightsMotivation motivation={insights.motivation_message} accentColor={accentColor} />
+        <MLInsightsSkillLevel skillLevel={insights.skill_level} topLanguages={insights.top_languages} />
+        <MLInsightsStrengths strengths={insights.strengths} />
+        <MLInsightsImprovements improvementAreas={insights.improvement_areas} />
+        <MLInsightsGoals recommendedGoals={insights.recommended_goals} />
+        <MLInsightsLearningPath learningPath={insights.learning_path} />
+        <MLInsightsHours estimatedHours={insights.estimated_hours} />
+        <MLInsightsProjectComplexity projectComplexity={insights.project_complexity} />
+        <MLInsightsCodingPatterns codingPatterns={insights.coding_patterns} />
+        <MLInsightsFooter aiSuccess={insights.ai_success} source={insights.source} />
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </View>
     </ScrollView>
   );
 }
@@ -42,5 +54,22 @@ export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  headerTitle: {
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    opacity: 0.7,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  bottomPadding: {
+    height: 24,
   },
 });

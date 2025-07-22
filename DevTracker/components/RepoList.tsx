@@ -1,12 +1,12 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { ScrollView, TouchableOpacity, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
+import { useThemeColor } from '../hooks/useThemeColor';
 
 interface RepoListProps {
   repos: any[];
   projectTypes: Record<string, string>;
-  repoItemBg: string;
   subtleTextColor: string;
   dateTextColor: string;
   loading: boolean;
@@ -17,13 +17,23 @@ interface RepoListProps {
 export function RepoList({
   repos,
   projectTypes,
-  repoItemBg,
   subtleTextColor,
   dateTextColor,
   loading,
   onRepoPress,
   renderExtraActions,
 }: RepoListProps) {
+  const accentColor = useThemeColor({}, 'tint');
+  
+  if (loading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={accentColor} />
+        <ThemedText type="body" style={styles.loadingText}>Loading repositories...</ThemedText>
+      </ThemedView>
+    );
+  }
+  
   return (
     <ScrollView style={styles.reposList} showsVerticalScrollIndicator={false}>
       {repos.length > 0 ? (
@@ -31,25 +41,32 @@ export function RepoList({
           <TouchableOpacity 
             key={item.id} 
             onPress={() => onRepoPress(item.name)}
+            activeOpacity={0.7}
           >
-            <ThemedView style={[styles.repoItem, { backgroundColor: repoItemBg }]}>
-              <ThemedText style={styles.repoName}>{item.name}</ThemedText>
-              <ThemedText style={[styles.repoLanguage, { color: subtleTextColor }]}>
-                {item.language || 'No language'}
-              </ThemedText>
+            <ThemedView variant="surface" style={styles.repoItem}>
+              <View style={styles.repoHeader}>
+                <ThemedText type="defaultSemiBold" style={styles.repoName}>
+                  {item.name}
+                </ThemedText>
+                {item.language && (
+                  <View style={[styles.languageBadge, { backgroundColor: accentColor }]}>
+                    <ThemedText style={styles.languageText}>{item.language}</ThemedText>
+                  </View>
+                )}
+              </View>
               {projectTypes[item.name] && (
-                <ThemedText style={[styles.projectType, { color: subtleTextColor }]}>
+                <ThemedText type="caption" style={[styles.projectType, { color: subtleTextColor }]}>
                   📁 {projectTypes[item.name]}
                 </ThemedText>
               )}
-              <ThemedText style={styles.repoDescription} numberOfLines={2}>
+              <ThemedText type="body" style={styles.repoDescription} numberOfLines={2}>
                 {item.description || 'No description'}
               </ThemedText>
-              <ThemedText style={[styles.repoDate, { color: dateTextColor }]}>
+              <ThemedText type="caption" style={[styles.repoDate, { color: dateTextColor }]}>
                 Updated: {new Date(item.updated_at).toLocaleDateString()}
               </ThemedText>
               {renderExtraActions && (
-                <View style={{ marginTop: 4 }}>
+                <View style={styles.actionsContainer}>
                   {renderExtraActions(item)}
                 </View>
               )}
@@ -57,7 +74,7 @@ export function RepoList({
           </TouchableOpacity>
         ))
       ) : (
-        <ThemedText style={styles.emptyState}>
+        <ThemedText type="body" style={styles.emptyState}>
           {loading ? 'Loading repositories...' : 'No repositories found.'}
         </ThemedText>
       )}
@@ -66,37 +83,64 @@ export function RepoList({
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
   reposList: {
     flex: 1,
   },
   repoItem: {
-    padding: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  repoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
-    borderRadius: 6,
   },
   repoName: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    flex: 1,
+    marginRight: 12,
   },
-  repoLanguage: {
-    fontSize: 12,
+  languageBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  languageText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
   },
   repoDescription: {
-    marginTop: 4,
-    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 20,
   },
   repoDate: {
-    fontSize: 12,
-    marginTop: 4,
+    marginBottom: 4,
   },
   projectType: {
-    fontSize: 12,
-    fontStyle: 'italic',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  actionsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   emptyState: {
     textAlign: 'center',
-    fontStyle: 'italic',
     opacity: 0.7,
-    padding: 20,
+    padding: 40,
+    fontSize: 16,
   },
 });
