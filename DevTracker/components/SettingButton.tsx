@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useThemeColor } from '../hooks/useThemeColor';
@@ -18,25 +18,26 @@ export function SettingButton({
   const dangerColor = useThemeColor({}, 'error');
   const subtleColor = useThemeColor({}, 'secondary');
   
+  const cardColor = useThemeColor({}, 'card');
   return (
     <TouchableOpacity
-      style={styles.settingButton}
+      style={[styles.settingButton, { width: '100%' }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <ThemedView variant="surface" style={styles.buttonContent}>
-        <ThemedView style={styles.textContainer}>
-          <ThemedText type="body" style={[styles.title, danger && { color: dangerColor }]}>
+      <View style={[styles.buttonContent, { backgroundColor: cardColor, borderRadius: 16 }]}> 
+        <View style={styles.textContainer}>
+          <ThemedText type="body" style={[styles.title, danger && { color: dangerColor }]}> 
             {title}
           </ThemedText>
           {subtitle && (
-            <ThemedText type="caption" style={[styles.subtitle, { color: subtleColor }]}>
+            <ThemedText type="caption" style={[styles.subtitle, { color: subtleColor }]}> 
               {subtitle}
             </ThemedText>
           )}
-        </ThemedView>
+        </View>
         <ThemedText style={[styles.chevron, danger && { color: dangerColor }]}>›</ThemedText>
-      </ThemedView>
+      </View>
     </TouchableOpacity>
   );
 }

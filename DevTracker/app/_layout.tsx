@@ -18,15 +18,7 @@ export default function RootLayout() {
     if (loaded) {
       const githubToken = Constants.expoConfig?.extra?.githubToken;
       const huggingfaceToken = Constants.expoConfig?.extra?.huggingfaceToken;
-      
-      console.log('=== TOKEN VERIFICATION ===');
-      console.log('GitHub Token:', githubToken ? 'Present' : 'Missing');
-      console.log('GitHub Token length:', githubToken ? githubToken.length : 0);
-      console.log('HuggingFace Token:', huggingfaceToken ? 'Present' : 'Missing');
-      console.log('HuggingFace Token length:', huggingfaceToken ? huggingfaceToken.length : 0);
-      console.log('HuggingFace Token starts with hf_:', huggingfaceToken ? huggingfaceToken.startsWith('hf_') : false);
-      console.log('=========================');
-    }
+          }
   }, [loaded]);
 
   if (!loaded) {

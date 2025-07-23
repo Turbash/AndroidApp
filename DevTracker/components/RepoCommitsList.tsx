@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { useThemeColor } from '../hooks/useThemeColor';
 import { openBrowserAsync } from 'expo-web-browser';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
@@ -12,6 +13,8 @@ export function RepoCommitsList({
   commits: GitHubCommit[];
   subtleTextColor: string;
 }) {
+  const cardColor = useThemeColor({}, 'card');
+  const borderColor = useThemeColor({}, 'border');
   return (
     <>
       {commits.map((item) => (
@@ -20,19 +23,19 @@ export function RepoCommitsList({
           onPress={() => openBrowserAsync(item.html_url)}
           activeOpacity={0.7}
         >
-          <ThemedView variant="surface" style={styles.commitItem}>
+          <View style={[styles.commitItem, { backgroundColor: cardColor, borderRadius: 12, borderWidth: 1, borderColor, shadowColor: cardColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 2 }]}> 
             <ThemedText type="body" style={styles.commitMessage} numberOfLines={2}>
               {item.commit.message}
             </ThemedText>
             <View style={styles.commitMeta}>
-              <ThemedText type="caption" style={[styles.commitAuthor, { color: subtleTextColor }]}>
+              <ThemedText type="caption" style={[styles.commitAuthor, { color: subtleTextColor }]}> 
                 👤 {item.commit.author.name}
               </ThemedText>
-              <ThemedText type="caption" style={[styles.commitDate, { color: subtleTextColor }]}>
+              <ThemedText type="caption" style={[styles.commitDate, { color: subtleTextColor }]}> 
                 📅 {new Date(item.commit.author.date).toLocaleDateString()}
               </ThemedText>
             </View>
-          </ThemedView>
+          </View>
         </TouchableOpacity>
       ))}
     </>

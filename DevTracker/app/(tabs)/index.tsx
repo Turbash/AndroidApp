@@ -17,6 +17,7 @@ export default function DashboardScreen() {
   const accentColor = useThemeColor({}, 'tint');
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
+  const cardColor = useThemeColor({}, 'card');
 
   useFocusEffect(
     useCallback(() => {
@@ -54,7 +55,7 @@ export default function DashboardScreen() {
         <GitHubDashboard username={githubUsername} />
       ) : (
         <View style={styles.connectContainer}>
-          <View style={[styles.connectCard, { backgroundColor: useThemeColor({}, 'card') }]}>
+    <View style={[styles.connectCard, { backgroundColor: cardColor }]}> 
             <View style={styles.connectIcon}>
               <Octicons name="mark-github" size={32} color={accentColor} />
             </View>

@@ -18,12 +18,13 @@ export function AccountSection({
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
   
+  const cardColor = useThemeColor({}, 'card');
   return (
     <View style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Account</ThemedText>
       {githubUsername ? (
         <>
-          <ThemedView variant="card" style={styles.connectedCard}>
+          <View style={[styles.connectedCard, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: successColor }]} />
               <ThemedText type="body" style={styles.statusText}>Connected</ThemedText>
@@ -31,7 +32,7 @@ export function AccountSection({
             <ThemedText type="defaultSemiBold" style={styles.usernameText}>
               @{githubUsername}
             </ThemedText>
-          </ThemedView>
+          </View>
           <SettingButton
             title="Disconnect GitHub"
             onPress={onLogout}
@@ -40,7 +41,7 @@ export function AccountSection({
         </>
       ) : (
         <>
-          <ThemedView variant="card" style={styles.disconnectedCard}>
+          <View style={[styles.disconnectedCard, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <View style={styles.statusRow}>
               <View style={styles.statusDotDisconnected} />
               <ThemedText type="body" style={styles.statusText}>Not Connected</ThemedText>
@@ -48,7 +49,7 @@ export function AccountSection({
             <ThemedText type="body" style={styles.disconnectedText}>
               Connect your GitHub account to track your development progress
             </ThemedText>
-          </ThemedView>
+          </View>
           <SettingButton
             title="Connect GitHub"
             onPress={onConnect}

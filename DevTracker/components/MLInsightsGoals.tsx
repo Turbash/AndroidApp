@@ -8,6 +8,8 @@ import { useThemeColor } from '../hooks/useThemeColor';
 export function MLInsightsGoals({ recommendedGoals }: { recommendedGoals: any[] }) {
   const accentColor = useThemeColor({}, 'tint');
   const warningColor = useThemeColor({}, 'warning');
+  const cardColor = useThemeColor({}, 'card');
+  const borderColor = useThemeColor({}, 'border');
   
   return (
     <ThemedView variant="card" style={styles.section}>
@@ -16,7 +18,7 @@ export function MLInsightsGoals({ recommendedGoals }: { recommendedGoals: any[] 
       </ThemedText>
       {Array.isArray(recommendedGoals) && recommendedGoals.length > 0
         ? recommendedGoals.map((goal: any, i: number) => (
-            <ThemedView key={i} variant="surface" style={styles.goalCard}>
+            <ThemedView key={i} variant="surface" style={[styles.goalCard, { borderWidth: 1, borderColor, backgroundColor: cardColor, borderRadius: 12 }]}> 
               <View style={styles.goalHeader}>
                 <ThemedText type="defaultSemiBold" style={styles.goalTitle}>
                   {goal.title}

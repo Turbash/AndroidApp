@@ -29,6 +29,7 @@ export default function GoalsScreen() {
   const successColor = useThemeColor({}, 'success');
   const errorColor = useThemeColor({}, 'error');
   const borderColor = useThemeColor({}, 'border');
+  const secondaryColor = useThemeColor({}, 'secondary');
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const cardColor = useThemeColor({}, 'card');
@@ -127,14 +128,14 @@ export default function GoalsScreen() {
           <TextInput
             style={[styles.input, { borderColor }]}
             placeholder="Goal Title"
-            placeholderTextColor={useThemeColor({}, 'secondary')}
+            placeholderTextColor={secondaryColor}
             value={title}
             onChangeText={setTitle}
           />
           <TextInput
             style={[styles.input, { borderColor }]}
             placeholder="Description"
-            placeholderTextColor={useThemeColor({}, 'secondary')}
+            placeholderTextColor={secondaryColor}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -143,7 +144,7 @@ export default function GoalsScreen() {
           <TextInput
             style={[styles.input, { borderColor }]}
             placeholder="Category"
-            placeholderTextColor={useThemeColor({}, 'secondary')}
+            placeholderTextColor={secondaryColor}
             value={category}
             onChangeText={setCategory}
           />

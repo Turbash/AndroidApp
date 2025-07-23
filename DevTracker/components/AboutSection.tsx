@@ -7,10 +7,11 @@ import { useThemeColor } from '../hooks/useThemeColor';
 export function AboutSection() {
   const accentColor = useThemeColor({}, 'tint');
   
+  const cardColor = useThemeColor({}, 'card');
   return (
     <View style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>About</ThemedText>
-      <ThemedView variant="card" style={styles.aboutCard}>
+      <View style={[styles.aboutCard, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
         <View style={styles.appIconContainer}>
           <ThemedText style={styles.appIcon}>📱</ThemedText>
         </View>
@@ -20,10 +21,10 @@ export function AboutSection() {
         <ThemedText type="body" style={styles.appDescription}>
           Smart Developer Progress Tracker
         </ThemedText>
-        <ThemedText type="caption" style={[styles.subtitle, { color: accentColor }]}>
+        <ThemedText type="caption" style={[styles.subtitle, { color: accentColor }]}> 
           Built with ❤️ for the developer community
         </ThemedText>
-      </ThemedView>
+      </View>
     </View>
   );
 }

@@ -29,10 +29,12 @@ export default function RepoDetailsScreen() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysis, setAnalysis] = useState<RepoAnalysisResponse | null>(null);
 
+  // Move all hooks to top level
   const colorScheme = useColorScheme();
   const subtleTextColor = useThemeColor({}, 'secondary');
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
+  const cardColor = useThemeColor({}, 'card');
 
   useEffect(() => {
     console.log('RepoDetailsScreen mounted with repoName:', repoName);
@@ -173,27 +175,26 @@ export default function RepoDetailsScreen() {
     );
   }
 
+  // cardColor already declared at top
   return (
     <ScrollView style={styles.scrollContainer}>
       <SafeAreaView style={styles.container}>
         {/* Header */}
-        <ThemedView variant="card" style={styles.header}>
+        <View style={[styles.header, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
           <ThemedText type="title" style={styles.repoTitle}>{repoName}</ThemedText>
-          <ThemedText type="body" style={[styles.repoOwner, { color: subtleTextColor }]}>
+          <ThemedText type="body" style={[styles.repoOwner, { color: subtleTextColor }]}> 
             @{username}
           </ThemedText>
-          
-          <View style={styles.actionButtons}>
+          <View style={styles.actionButtonsFull}>
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: accentColor }]}
+              style={[styles.actionButtonFull, { backgroundColor: accentColor }]}
               onPress={() => openBrowserAsync(`https://github.com/${username}/${repoName}`)}
             >
               <ThemedText style={styles.actionButtonText}>🔗 View on GitHub</ThemedText>
             </TouchableOpacity>
-            
             {!showAnalysis && (
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: successColor }]}
+                style={[styles.actionButtonFull, { backgroundColor: successColor }]}
                 onPress={handleAnalyseRepo}
                 disabled={analysisLoading}
               >
@@ -203,13 +204,13 @@ export default function RepoDetailsScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </ThemedView>
+        </View>
         
 
 
         {/* Repo Analysis Display */}
         {showAnalysis && (
-          <ThemedView variant="card" style={styles.analysisContainer}>
+          <View style={[styles.analysisContainer, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               🤖 AI Analysis
             </ThemedText>
@@ -236,37 +237,37 @@ export default function RepoDetailsScreen() {
             >
               <ThemedText style={styles.closeButtonText}>Close Analysis</ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          </View>
         )}
 
         {/* Languages */}
         {!showAnalysis && Object.keys(languages).length > 0 && (
-          <ThemedView variant="card" style={styles.section}>
+          <View style={[styles.section, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               🗣️ Languages Used
             </ThemedText>
             <RepoLanguages languages={languages} totalBytes={totalBytes} subtleTextColor={subtleTextColor} />
-          </ThemedView>
+          </View>
         )}
 
         {/* README Preview */}
         {!showAnalysis && readme && (
-          <ThemedView variant="card" style={styles.section}>
+          <View style={[styles.section, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               📖 README Preview
             </ThemedText>
             <RepoReadmePreview readme={readme} />
-          </ThemedView>
+          </View>
         )}
 
         {/* Recent Commits */}
         {!showAnalysis && commits.length > 0 && (
-          <ThemedView variant="card" style={styles.section}>
+          <View style={[styles.section, { backgroundColor: cardColor, borderRadius: 16, width: '100%' }]}> 
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               📝 Recent Commits ({commits.length})
             </ThemedText>
             <RepoCommitsList commits={commits} subtleTextColor={subtleTextColor} />
-          </ThemedView>
+          </View>
         )}
         
         <View style={styles.bottomPadding} />
@@ -276,6 +277,21 @@ export default function RepoDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
+  actionButtonsFull: {
+    flexDirection: 'column',
+    gap: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  actionButtonFull: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   scrollContainer: {
     flex: 1,
   },

@@ -22,6 +22,7 @@ export default function GitHubConnectScreen() {
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const cardColor = useThemeColor({}, 'card');
+  const secondaryColor = useThemeColor({}, 'secondary');
 
   const handleConnect = async () => {
     setLoading(true);
@@ -101,7 +102,7 @@ export default function GitHubConnectScreen() {
             style={[
               styles.connectButton, 
               { 
-                backgroundColor: loading ? useThemeColor({}, 'secondary') : accentColor,
+                backgroundColor: loading ? secondaryColor : accentColor,
                 opacity: loading ? 0.7 : 1
               }
             ]}

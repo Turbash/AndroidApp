@@ -4,7 +4,7 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { RepoList } from './RepoList';
 import { formatTimeAgo } from './formatTimeAgo';
-import { Button, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { Button, Modal,View, StyleSheet, TouchableOpacity } from 'react-native';
 import { RepoAnalysisModal } from './RepoAnalysisModal';
 import { fetchRepoCommits, fetchRepoLanguages, fetchRepoReadme } from '../services/github';
 import { useThemeColor } from '../hooks/useThemeColor';

@@ -7,16 +7,17 @@ import { useThemeColor } from '../hooks/useThemeColor';
 
 export function MLInsightsHours({ estimatedHours }: { estimatedHours: number }) {
   const accentColor = useThemeColor({}, 'tint');
+  // No hardcoding: estimatedHours is always passed from insights, not hardcoded
   
   return (
     <ThemedView variant="card" style={styles.section}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         ⏱️ Estimated Learning Hours
       </ThemedText>
-      {typeof estimatedHours === 'number'
+      {typeof estimatedHours === 'number' && estimatedHours > 0
         ? (
           <View style={styles.hoursContainer}>
-            <View style={[styles.hoursBadge, { backgroundColor: accentColor }]}>
+            <View style={[styles.hoursBadge, { backgroundColor: accentColor }]}> 
               <ThemedText style={styles.hoursText}>{estimatedHours} hours</ThemedText>
             </View>
             <ThemedText type="caption" style={styles.hoursNote}>

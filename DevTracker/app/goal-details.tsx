@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator, StatusBar } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator, StatusBar, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { AIUnavailableState } from '../components/AIUnavailableState';
+import { ChatHistory } from '../components/ChatHistory';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { getGitHubUsername, getGoalChatHistory, setGoalChatHistory, ChatTurn, clearGoalChatHistory, getCachedGitHubData } from '../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +30,7 @@ interface GoalAnalysis {
 const GOALS_STORAGE_KEY = 'DEVTRACKER_GOALS';
 
 export default function GoalDetailsScreen() {
+  const [showChatHistory, setShowChatHistory] = useState(false);
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [progressNote, setProgressNote] = useState('');
@@ -46,6 +48,7 @@ export default function GoalDetailsScreen() {
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const cardColor = useThemeColor({}, 'card');
+  const surfaceColor = useThemeColor({}, 'surface');
 
   useEffect(() => {
     loadGoal();
@@ -157,46 +160,31 @@ export default function GoalDetailsScreen() {
   };
 
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {goal ? (
-          goal.completed ? (
-            <View style={[styles.completedCard, { backgroundColor: cardColor }]}>
+return (
+  <SafeAreaView style={[styles.container, { backgroundColor }]}>
+    <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      {goal ? (
+        <View style={{ flex: 1 }}>
+          {/* Header and progress notes for completed/in-progress goals */}
+          {goal.completed ? (
+            <View style={[styles.completedCard, { backgroundColor: cardColor }]}> 
               <View style={styles.completedHeader}>
-                <View style={[styles.completedBadge, { backgroundColor: successColor }]}>
-                  <ThemedText style={styles.completedBadgeText}>✓ Completed</ThemedText>
-                </View>
+                <View style={[styles.completedBadge, { backgroundColor: successColor }]} />
               </View>
-              
-              <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
-              
-              {goal.category && (
-                <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}>
-                  <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
-                </View>
-              )}
-              
               {goal.description && (
                 <ThemedText type="body" style={styles.goalDescription}>
                   {goal.description}
                 </ThemedText>
               )}
-              
-              <View style={[styles.congratsCard, { backgroundColor: useThemeColor({}, 'surface') }]}>
-                <ThemedText type="subtitle" style={[styles.congratsText, { color: successColor }]}>
-                  🎉 Congratulations!
-                </ThemedText>
-                <ThemedText type="body" style={styles.congratsSubtext}>
-                  You've successfully completed this goal
-                </ThemedText>
+              <View style={[styles.congratsCard, { backgroundColor: surfaceColor }]}> 
+                <ThemedText type="subtitle" style={[styles.congratsText, { color: successColor }]}>🎉 Congratulations!</ThemedText>
+                <ThemedText type="body" style={styles.congratsSubtext}>You've successfully completed this goal</ThemedText>
               </View>
             </View>
           ) : (
             <>
-              <View style={[styles.goalCard, { backgroundColor: cardColor }]}>
+              <View style={[styles.goalCard, { backgroundColor: cardColor }]}> 
                 <View style={styles.goalHeader}>
                   <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
                   {goal.category && (
@@ -206,28 +194,22 @@ export default function GoalDetailsScreen() {
                   )}
                 </View>
                 {goal.description && (
-                  <ThemedText type="body" style={styles.goalDescription}>
-                    {goal.description}
-                  </ThemedText>
+                  <ThemedText type="body" style={styles.goalDescription}>{goal.description}</ThemedText>
                 )}
                 <View style={[styles.statusBadge, { backgroundColor: 'rgba(37, 99, 235, 0.1)' }]}> 
-                  <ThemedText style={[styles.statusText, { color: accentColor }]}> 
-                    In Progress
-                  </ThemedText>
+                  <ThemedText style={[styles.statusText, { color: accentColor }]}>In Progress</ThemedText>
                 </View>
               </View>
-              <View style={[styles.progressSection, { backgroundColor: cardColor }]}>
+              <View style={[styles.progressSection, { backgroundColor: cardColor }]}> 
                 <ThemedText type="subtitle" style={styles.sectionTitle}>Progress Notes</ThemedText>
-                {goal.progressNotes.length === 0 && (
-                  <View style={[styles.emptyState, { backgroundColor: useThemeColor({}, 'surface') }]}>
-                    <ThemedText type="body" style={styles.emptyText}>
-                      No progress notes yet. Add your first update below.
-                    </ThemedText>
+                {goal.progressNotes && goal.progressNotes.length === 0 && (
+                  <View style={[styles.emptyState, { backgroundColor: surfaceColor }]}> 
+                    <ThemedText type="body" style={styles.emptyText}>No progress notes yet. Add your first update below.</ThemedText>
                   </View>
                 )}
                 <View style={styles.progressList}>
-                  {goal.progressNotes.map((note, idx) => (
-                    <View key={idx} style={[styles.progressNoteItem, { backgroundColor: useThemeColor({}, 'surface') }]}>
+                  {goal.progressNotes && goal.progressNotes.map((note, idx) => (
+                    <View key={idx} style={[styles.progressNoteItem, { backgroundColor: surfaceColor }]}> 
                       <ThemedText type="body">{note}</ThemedText>
                     </View>
                   ))}
@@ -245,8 +227,8 @@ export default function GoalDetailsScreen() {
                   />
                   <TouchableOpacity
                     style={[
-                      styles.addProgressButton, 
-                      { 
+                      styles.addProgressButton,
+                      {
                         backgroundColor: progressNote.trim() ? accentColor : secondaryColor,
                         opacity: progressNote.trim() ? 1 : 0.6
                       }
@@ -261,88 +243,104 @@ export default function GoalDetailsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={[styles.insightsSection, { backgroundColor: cardColor }]}>
-                {!analysisLoading && (
-                  <TouchableOpacity
-                    style={[styles.analyzeButton, { backgroundColor: successColor }]}
-                    onPress={handleGetInsights}
-                    activeOpacity={0.8}
-                  >
-                    <ThemedText style={styles.analyzeButtonText}>Get AI Insights</ThemedText>
-                  </TouchableOpacity>
-                )}
-                {analysisLoading && (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={accentColor} />
-                    <ThemedText type="body" style={styles.loadingText}>Analyzing goal...</ThemedText>
-                  </View>
-                )}
-                {analysis && (
-                  <View style={[styles.analysisBox, { backgroundColor: useThemeColor({}, 'surface') }]}>
-                    <ThemedText type="label" style={styles.analysisTitle}>AI Suggestions</ThemedText>
-                    {analysis.suggestions?.map((s, i) => (
-                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                    ))}
-                    <ThemedText type="label" style={styles.analysisTitle}>Next Steps</ThemedText>
-                    {analysis.next_steps?.map((s, i) => (
-                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                    ))}
-                    <ThemedText type="label" style={styles.analysisTitle}>Estimated Time</ThemedText>
-                    <ThemedText type="body" style={styles.analysisItem}>{analysis.estimated_time}</ThemedText>
-                    <ThemedText type="label" style={styles.analysisTitle}>Resources</ThemedText>
-                    {analysis.resources?.map((s, i) => (
-                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                    ))}
-                  </View>
-                )}
-                {error && (
-                  <AIUnavailableState
-                    title="AI analysis unavailable"
-                    description={error || "AI analysis failed. Please check your network or try again later."}
-                    icon="🤖"
-                  />
-                )}
-              </View>
-              {chatHistory.length > 0 && (
-                <View style={[styles.chatSection, { backgroundColor: cardColor }]}>
-                  <ThemedText type="subtitle" style={styles.sectionTitle}>Chat History</ThemedText>
-                  <View style={styles.chatList}>
-                    {chatHistory.map((turn, idx) => (
-                      <View 
-                        key={idx} 
-                        style={[
-                          styles.chatMessage,
-                          { backgroundColor: useThemeColor({}, 'surface') },
-                          turn.role === 'user' ? styles.userMessage : styles.aiMessage
-                        ]}
-                      >
-                        <ThemedText type="caption" style={styles.chatRole}>
-                          {turn.role === 'user' ? 'You' : 'AI Assistant'}
-                        </ThemedText>
-                        <ThemedText type="body" style={styles.chatText}>
-                          {turn.message}
-                        </ThemedText>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
             </>
-          )
-        ) : (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={accentColor} />
-            <ThemedText type="body" style={styles.loadingText}>Loading goal...</ThemedText>
-          </View>
-        )}
-        
-        <View style={styles.bottomPadding} />
-      </ScrollView>
-    </SafeAreaView>
-  );
+          )}
+          {/* Single Chat History Toggle Button and Section */}
+          <TouchableOpacity
+            style={[styles.showHistoryButton, { backgroundColor: accentColor }]}
+            onPress={() => setShowChatHistory(v => !v)}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.showHistoryButtonText}>
+              {showChatHistory ? 'Hide AI Suggestions History' : 'Show AI Suggestions History'}
+            </ThemedText>
+          </TouchableOpacity>
+          {showChatHistory && (
+            <View style={[styles.chatSection, { backgroundColor: cardColor }]}> 
+              <ChatHistory chatHistory={chatHistory} username={username} />
+            </View>
+          )}
+          {/* Unified Analysis Section (shared) */}
+          {analysis && (
+            <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
+              <View style={{
+                backgroundColor: secondaryColor,
+                borderRadius: 16,
+                padding: 16,
+                maxWidth: '80%',
+                shadowColor: cardColor,
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                alignSelf: 'flex-start',
+              }}>
+                <ThemedText type="label" style={[styles.analysisTitle, { color: 'white', fontWeight: 'bold', fontSize: 16 }]}>AI Analysis</ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Suggestions:</ThemedText>{'\n'}
+                  {analysis.suggestions?.map((s, i) => `• ${s}`).join('\n')}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Next Steps:</ThemedText>{'\n'}
+                  {analysis.next_steps?.map((s, i) => `• ${s}`).join('\n')}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Estimated Time:</ThemedText>{'\n'}
+                  {analysis.estimated_time}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Resources:</ThemedText>{'\n'}
+                  {analysis.resources?.map((s, i) => `• ${s}`).join('\n')}
+                </ThemedText>
+              </View>
+            </View>
+          )}
+          {error && (
+            <AIUnavailableState
+              title="AI analysis unavailable"
+              description={error || "AI analysis failed. Please check your network or try again later."}
+              icon="🤖"
+            />
+          )}
+          <View style={styles.bottomPadding} />
+        </View>
+      ) : (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={accentColor} />
+          <ThemedText type="body" style={styles.loadingText}>Loading goal...</ThemedText>
+        </View>
+      )}
+    </ScrollView>
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({
+  showHistoryButton: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  showHistoryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  hideHistoryButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  hideHistoryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   container: {
     flex: 1,
   },
