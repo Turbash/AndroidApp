@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
+import { ThemedModal } from '../components/ThemedModal';
 import { clearGitHubCache, getGitHubUsername, logoutUser } from '../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountSection } from '../components/AccountSection';
@@ -11,47 +12,46 @@ import { AboutSection } from '../components/AboutSection';
 
 export default function SettingsScreen() {
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<'logout'|'logoutSuccess'|'clearCache'|'clearCacheSuccess'|null>(null);
   const router = useRouter();
 
   useEffect(() => {
     getGitHubUsername().then(setGithubUsername);
   }, []);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Disconnect GitHub',
-      'Are you sure you want to disconnect your GitHub account? All cached data will be cleared.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            await logoutUser();
-            setGithubUsername(null);
-            Alert.alert('Disconnected', 'GitHub account has been disconnected.');
-            router.replace('/');
-          },
-        },
-      ]
-    );
+  const handleLogout = () => {
+    setModalType('logout');
+    setModalVisible(true);
   };
 
-  const handleClearCache = async () => {
-    Alert.alert(
-      'Clear Cache',
-      'This will clear all cached GitHub data. Fresh data will be fetched on next load.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          onPress: async () => {
-            await clearGitHubCache();
-            Alert.alert('Cache Cleared', 'GitHub data cache has been cleared.');
-          },
-        },
-      ]
-    );
+  const handleConfirmLogout = async () => {
+    await logoutUser();
+    setGithubUsername(null);
+    setModalType('logoutSuccess');
+    setModalVisible(true);
+  };
+
+  const handleLogoutSuccess = () => {
+    setModalVisible(false);
+    setModalType(null);
+    router.replace('/');
+  };
+
+  const handleClearCache = () => {
+    setModalType('clearCache');
+    setModalVisible(true);
+  };
+
+  const handleConfirmClearCache = async () => {
+    await clearGitHubCache();
+    setModalType('clearCacheSuccess');
+    setModalVisible(true);
+  };
+
+  const handleCacheCleared = () => {
+    setModalVisible(false);
+    setModalType(null);
   };
 
   return (
@@ -62,7 +62,7 @@ export default function SettingsScreen() {
           Manage your account and preferences
         </ThemedText>
       </View>
-      
+
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <AccountSection
           githubUsername={githubUsername}
@@ -73,6 +73,40 @@ export default function SettingsScreen() {
         <AboutSection />
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <ThemedModal
+        visible={modalVisible}
+        title={
+          modalType === 'logout' ? 'Disconnect GitHub'
+          : modalType === 'logoutSuccess' ? 'Disconnected'
+          : modalType === 'clearCache' ? 'Clear Cache'
+          : modalType === 'clearCacheSuccess' ? 'Cache Cleared'
+          : ''
+        }
+        message={
+          modalType === 'logout' ? 'Are you sure you want to disconnect your GitHub account? All cached data will be cleared.'
+          : modalType === 'logoutSuccess' ? 'GitHub account has been disconnected.'
+          : modalType === 'clearCache' ? 'This will clear all cached GitHub data. Fresh data will be fetched on next load.'
+          : modalType === 'clearCacheSuccess' ? 'GitHub data cache has been cleared.'
+          : ''
+        }
+        confirmText={
+          modalType === 'logout' ? 'Disconnect'
+          : modalType === 'clearCache' ? 'Clear'
+          : modalType === 'logoutSuccess' || modalType === 'clearCacheSuccess' ? 'OK'
+          : ''
+        }
+        cancelText={modalType === 'logout' || modalType === 'clearCache' ? 'Cancel' : undefined}
+        error={modalType === 'logout' || modalType === 'logoutSuccess'}
+        onConfirm={
+          modalType === 'logout' ? handleConfirmLogout
+          : modalType === 'logoutSuccess' ? handleLogoutSuccess
+          : modalType === 'clearCache' ? handleConfirmClearCache
+          : modalType === 'clearCacheSuccess' ? handleCacheCleared
+          : undefined
+        }
+        onCancel={() => { setModalVisible(false); setModalType(null); }}
+      />
     </SafeAreaView>
   );
 }

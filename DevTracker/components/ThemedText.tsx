@@ -4,7 +4,7 @@ import { useThemeColor } from '../hooks/useThemeColor';
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'subtitle' | 'body' | 'caption' | 'label' | 'defaultSemiBold';
+  type?: 'default' | 'title' | 'subtitle' | 'body' | 'caption' | 'label' | 'defaultSemiBold'|'link';
 };
 
 export function ThemedText({

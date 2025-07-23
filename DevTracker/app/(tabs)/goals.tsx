@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Alert, StatusBar } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
+import { ThemedModal } from '../../components/ThemedModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { useColorScheme } from '../../hooks/useColorScheme';
@@ -25,6 +26,8 @@ export default function GoalsScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [adding, setAdding] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalGoalId, setModalGoalId] = useState<string | null>(null);
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
   const errorColor = useThemeColor({}, 'error');
@@ -85,21 +88,22 @@ export default function GoalsScreen() {
   };
 
   const deleteGoal = (id: string) => {
-    Alert.alert(
-      'Delete Goal',
-      'Are you sure you want to delete this goal?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            const newGoals = goals.filter(goal => goal.id !== id);
-            saveGoals(newGoals);
-          },
-        },
-      ]
-    );
+    setModalGoalId(id);
+    setModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (modalGoalId) {
+      const newGoals = goals.filter(goal => goal.id !== modalGoalId);
+      saveGoals(newGoals);
+    }
+    setModalVisible(false);
+    setModalGoalId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setModalVisible(false);
+    setModalGoalId(null);
   };
 
   const handleGoalPress = (goal: Goal) => {
@@ -110,9 +114,18 @@ export default function GoalsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}> 
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
+      <ThemedModal
+        visible={modalVisible}
+        title="Delete Goal"
+        message="Are you sure you want to delete this goal?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        error
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
       <TouchableOpacity 
         style={[styles.addButton, { backgroundColor: accentColor }]} 
         onPress={() => setAdding(!adding)}
@@ -124,7 +137,7 @@ export default function GoalsScreen() {
       </TouchableOpacity>
 
       {adding && (
-        <View style={[styles.form, { backgroundColor: cardColor }]}>
+        <View style={[styles.form, { backgroundColor: cardColor }]}> 
           <TextInput
             style={[styles.input, { borderColor }]}
             placeholder="Goal Title"
@@ -160,7 +173,7 @@ export default function GoalsScreen() {
 
       <ScrollView style={styles.goalsList}>
         {goals.length === 0 && (
-          <View style={[styles.emptyState, { backgroundColor: cardColor }]}>
+          <View style={[styles.emptyState, { backgroundColor: cardColor }]}> 
             <ThemedText type="subtitle" style={styles.emptyTitle}>No Goals Yet</ThemedText>
             <ThemedText type="body" style={styles.emptyDescription}>
               Create your first learning goal to get started
@@ -173,12 +186,11 @@ export default function GoalsScreen() {
             onPress={() => handleGoalPress(goal)}
             activeOpacity={0.7}
           >
-            <View style={[styles.goalCard, { backgroundColor: cardColor }]}>
+            <View style={[styles.goalCard, { backgroundColor: cardColor }]}> 
               <View style={styles.goalHeader}>
                 <TouchableOpacity 
                   onPress={() => toggleGoalCompleted(goal.id)}
-                  style={[
-                    styles.checkbox,
+                  style={[styles.checkbox,
                     { 
                       backgroundColor: goal.completed ? successColor : 'transparent',
                       borderColor: goal.completed ? successColor : borderColor
@@ -196,7 +208,7 @@ export default function GoalsScreen() {
                     {goal.title}
                   </ThemedText>
                   {goal.category && (
-                    <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}>
+                    <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}> 
                       <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
                     </View>
                   )}
@@ -207,14 +219,14 @@ export default function GoalsScreen() {
                   style={styles.deleteButton}
                   activeOpacity={0.7}
                 >
-                  <ThemedText style={[styles.deleteButtonText, { color: errorColor }]}>
+                  <ThemedText style={[styles.deleteButtonText, { color: errorColor }]}> 
                     ✕
                   </ThemedText>
                 </TouchableOpacity>
               </View>
               
               {goal.description && (
-                <ThemedText type="body" style={styles.goalDescription}>
+                <ThemedText type="body" style={styles.goalDescription}> 
                   {goal.description}
                 </ThemedText>
               )}
@@ -222,15 +234,14 @@ export default function GoalsScreen() {
               <View style={styles.goalFooter}>
                 <ThemedText 
                   type="caption" 
-                  style={[
-                    styles.goalStatus,
+                  style={[styles.goalStatus,
                     { color: goal.completed ? successColor : accentColor }
                   ]}
                 >
                   {goal.completed ? 'Completed' : 'In Progress'}
                 </ThemedText>
                 {goal.progressNotes && goal.progressNotes.length > 0 && (
-                  <ThemedText type="caption" style={styles.progressCount}>
+                  <ThemedText type="caption" style={styles.progressCount}> 
                     {goal.progressNotes.length} updates
                   </ThemedText>
                 )}
@@ -242,159 +253,151 @@ export default function GoalsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  addButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    margin: 16,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  form: {
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  input: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    fontSize: 15,
-    minHeight: 48,
-  },
-  saveButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  goalsList: {
-    flex: 1,
-  },
-  emptyState: {
-    borderRadius: 12,
-    padding: 32,
-    marginHorizontal: 16,
-    marginTop: 40,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    addButton: {
+      margin: 16,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  emptyTitle: {
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    opacity: 0.7,
-    textAlign: 'center',
-  },
-  goalCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    addButtonText: {
+      color: 'white',
+      fontWeight: '600',
+      fontSize: 16,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  checkmark: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  goalContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  goalTitle: {
-    flex: 1,
-    marginRight: 12,
-  },
-  categoryBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  categoryText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  goalDescription: {
-    marginBottom: 12,
-    opacity: 0.8,
-    lineHeight: 20,
-  },
-  goalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  goalStatus: {
-    fontWeight: '600',
-  },
-  progressCount: {
-    opacity: 0.6,
-  },
-  deleteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+    form: {
+      borderRadius: 12,
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    input: {
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 10,
+      fontSize: 15,
+    },
+    saveButton: {
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    saveButtonText: {
+      color: 'white',
+      fontWeight: '600',
+    },
+    goalsList: {
+      flex: 1,
+    },
+    emptyState: {
+      borderRadius: 12,
+      padding: 32,
+      marginHorizontal: 16,
+      marginTop: 40,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    emptyTitle: {
+      marginBottom: 8,
+    },
+    emptyDescription: {
+      opacity: 0.7,
+      textAlign: 'center',
+    },
+    goalCard: {
+      borderRadius: 12,
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    goalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    checkmark: {
+      color: 'white',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    goalContent: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    goalTitle: {
+      flex: 1,
+      marginRight: 12,
+    },
+    categoryBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    categoryText: {
+      color: 'white',
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    goalDescription: {
+      marginBottom: 12,
+      opacity: 0.8,
+      lineHeight: 20,
+    },
+    goalFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    goalStatus: {
+      fontWeight: '600',
+    },
+    progressCount: {
+      opacity: 0.6,
+    },
+    deleteButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deleteButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });

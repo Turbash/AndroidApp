@@ -51,7 +51,7 @@ export default function TabLayout() {
         options={{ 
           title: 'Goals',
           tabBarIcon: ({ color }) => (
-            <ThemedText style={{ fontSize: 18, color }}>✅</ThemedText>
+            <ThemedText style={{ fontSize: 18, color }}>🥅</ThemedText>
           )
         }}
       />
@@ -61,7 +61,7 @@ export default function TabLayout() {
         options={{ 
           title: 'Profile',
           tabBarIcon: ({ color }) => (
-            <ThemedText style={{ fontSize: 18, color }}>�‍♂️</ThemedText>
+            <ThemedText style={{ fontSize: 18, color }}>👤</ThemedText>
           )
         }}
       />

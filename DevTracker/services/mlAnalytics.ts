@@ -1,10 +1,7 @@
 import { fetchUserProfile, fetchUserRepos, fetchRepoReadme, fetchAllRepoCode } from './github';
-// Gather user profile, profile README, and top 5 repos (with name, readme, code, stars, forks, topics, languages) for ML analysis
 export async function gatherUserMLAnalysisData(username: string): Promise<any> {
-  // 1. Fetch user profile
   const profile = await fetchUserProfile(username, false);
 
-  // 2. Try to fetch profile README (if exists, usually in a repo named <username>/<username>)
   let profileReadme: string | null = null;
   try {
     profileReadme = await fetchRepoReadme(username, username);
@@ -12,7 +9,6 @@ export async function gatherUserMLAnalysisData(username: string): Promise<any> {
     profileReadme = null;
   }
 
-  // 3. Fetch all repos, sort by last updated, pick last 5 updated
   let repos = await fetchUserRepos(username, false);
   repos = Array.isArray(repos) ? repos : [];
   const lastUpdatedRepos = [...repos]
@@ -48,11 +44,10 @@ export async function gatherUserMLAnalysisData(username: string): Promise<any> {
       stars: repo.stargazers_count || 0,
       forks: repo.forks_count || 0,
       topics: repo.topics || [],
-      languages: repo.language ? { [repo.language]: 1 } : {}, // fallback if no languages API
+      languages: repo.language ? { [repo.language]: 1 } : {}, 
     });
   }
 
-  // 5. Build payload
   const payload = {
     username,
     profile,

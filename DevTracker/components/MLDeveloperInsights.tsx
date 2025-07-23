@@ -27,10 +27,9 @@ export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsP
       <ThemedView style={styles.header}>
         <ThemedText type="title" style={styles.headerTitle}>🤖 AI Insights</ThemedText>
         <ThemedText type="body" style={styles.headerSubtitle}>
-          Personalized analysis for @{username}
+          Personalized AI analysis for @{username}
         </ThemedText>
       </ThemedView>
-      
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <MLInsightsSummary summary={insights.summary} />
         <MLInsightsMotivation motivation={insights.motivation_message} accentColor={accentColor} />

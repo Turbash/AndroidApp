@@ -32,6 +32,7 @@ export default function RootLayout() {
         <Stack.Screen name="github-connect" options={{ title: "Connect GitHub" }} />
         <Stack.Screen name="repo-details" options={{ title: "Repository Details" }} />
         <Stack.Screen name="settings" options={{headerShown:false}}/>
+        <Stack.Screen name="goal-details" options={{ title: "Goal Details" }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
