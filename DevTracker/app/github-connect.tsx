@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity, View, StatusBar } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useColorScheme } from '../hooks/useColorScheme';
@@ -12,15 +12,14 @@ import { setGitHubToken } from '../services/github';
 import { saveGitHubUsername } from '../utils/storage';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Octicons } from '@expo/vector-icons';
 
 export default function GitHubConnectScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const textColor = useThemeColor({}, 'text');
+  const accentColor = useThemeColor({}, 'tint');
   const colorScheme = useColorScheme();
-  const borderColor = colorScheme === 'dark' ? '#666' : '#ccc';
-  const placeholderColor = colorScheme === 'dark' ? '#666' : '#999';
 
   const handleConnect = async () => {
     setLoading(true);
@@ -80,16 +79,44 @@ export default function GitHubConnectScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedText type="title">Connect GitHub</ThemedText>
-      <ThemedText style={styles.description}>
-        Connect your GitHub account to automatically track your repositories, commits, and coding activity
-      </ThemedText>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
-      <Button 
-        title={loading ? "Connecting..." : "Connect with GitHub"} 
-        onPress={handleConnect}
-        disabled={loading}
-      />
+      <View style={styles.content}>
+        <ThemedView variant="elevated" style={styles.connectCard}>
+          <View style={styles.iconContainer}>
+            <Octicons name="mark-github" size={48} color={accentColor} />
+          </View>
+          
+          <ThemedText type="title" style={styles.title}>
+            Connect GitHub
+          </ThemedText>
+          
+          <ThemedText type="body" style={styles.description}>
+            Connect your GitHub account to automatically track your repositories, commits, and coding activity
+          </ThemedText>
+          
+          <TouchableOpacity 
+            style={[
+              styles.connectButton, 
+              { 
+                backgroundColor: loading ? useThemeColor({}, 'secondary') : accentColor,
+                opacity: loading ? 0.7 : 1
+              }
+            ]}
+            onPress={handleConnect}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.connectButtonText}>
+              {loading ? "Connecting..." : "Connect with GitHub"}
+            </ThemedText>
+          </TouchableOpacity>
+          
+          <ThemedText type="caption" style={styles.helpText}>
+            We'll redirect you to GitHub to authorize the connection
+          </ThemedText>
+        </ThemedView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -98,24 +125,52 @@ export default function GitHubConnectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
-  description: {
-    marginBottom: 20,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  connectCard: {
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  title: {
+    marginBottom: 12,
     textAlign: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 20,
+  description: {
+    marginBottom: 32,
+    textAlign: 'center',
+    opacity: 0.8,
+    lineHeight: 22,
+    paddingHorizontal: 16,
+  },
+  connectButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    minWidth: 240,
+    marginBottom: 16,
+  },
+  connectButtonText: {
+    color: 'white',
+    fontWeight: '700',
     fontSize: 16,
   },
   helpText: {
-    fontSize: 12,
-    marginBottom: 20,
+    opacity: 0.6,
     textAlign: 'center',
-    opacity: 0.7,
+    paddingHorizontal: 24,
   },
 });

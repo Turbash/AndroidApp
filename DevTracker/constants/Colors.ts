@@ -1,40 +1,44 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Modern blue-themed color system for DevTracker
+ * Clean, professional, and mobile-friendly design
  */
 
-const tintColorLight = '#6366f1';
-const tintColorDark = '#818cf8';
+const tintColorLight = '#2563eb'; // Blue-600
+const tintColorDark = '#3b82f6';  // Blue-500
 
 export const Colors = {
   light: {
-    text: '#1f2937',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#6b7280',
-    tabIconDefault: '#9ca3af',
+    text: '#1e293b',           // Slate-800
+    background: '#ffffff',     // White
+    tint: tintColorLight,      // Blue-600
+    icon: '#64748b',           // Slate-500
+    tabIconDefault: '#94a3b8', // Slate-400
     tabIconSelected: tintColorLight,
-    card: '#f9fafb',
-    border: '#e5e7eb',
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    accent: '#8b5cf6',
-    secondary: '#64748b'
+    card: '#f8fafc',           // Slate-50
+    border: '#e2e8f0',         // Slate-200
+    success: '#059669',        // Emerald-600
+    warning: '#d97706',        // Amber-600
+    error: '#dc2626',          // Red-600
+    accent: '#7c3aed',         // Violet-600
+    secondary: '#64748b',      // Slate-500
+    muted: '#f1f5f9',          // Slate-100
+    surface: '#ffffff',        // White
   },
   dark: {
-    text: '#f9fafb',
-    background: '#111827',
-    tint: tintColorDark,
-    icon: '#9ca3af',
-    tabIconDefault: '#6b7280',
+    text: '#f1f5f9',           // Slate-100
+    background: '#0f172a',     // Slate-900
+    tint: tintColorDark,       // Blue-500
+    icon: '#94a3b8',           // Slate-400
+    tabIconDefault: '#64748b', // Slate-500
     tabIconSelected: tintColorDark,
-    card: '#1f2937',
-    border: '#374151',
-    success: '#34d399',
-    warning: '#fbbf24',
-    error: '#f87171',
-    accent: '#a78bfa',
-    secondary: '#94a3b8'
+    card: '#1e293b',           // Slate-800
+    border: '#334155',         // Slate-700
+    success: '#10b981',        // Emerald-500
+    warning: '#f59e0b',        // Amber-500
+    error: '#ef4444',          // Red-500
+    accent: '#8b5cf6',         // Violet-500
+    secondary: '#94a3b8',      // Slate-400
+    muted: '#334155',          // Slate-700
+    surface: '#1e293b',        // Slate-800
   },
 };

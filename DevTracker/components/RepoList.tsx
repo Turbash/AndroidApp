@@ -41,11 +41,11 @@ export function RepoList({
           <TouchableOpacity 
             key={item.id} 
             onPress={() => onRepoPress(item.name)}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <ThemedView variant="surface" style={styles.repoItem}>
+            <ThemedView variant="card" style={styles.repoItem}>
               <View style={styles.repoHeader}>
-                <ThemedText type="defaultSemiBold" style={styles.repoName}>
+                <ThemedText type="label" style={styles.repoName}>
                   {item.name}
                 </ThemedText>
                 {item.language && (
@@ -55,7 +55,7 @@ export function RepoList({
                 )}
               </View>
               {projectTypes[item.name] && (
-                <ThemedText type="caption" style={[styles.projectType, { color: subtleTextColor }]}>
+                <ThemedText type="caption" style={styles.projectType}>
                   📁 {projectTypes[item.name]}
                 </ThemedText>
               )}
@@ -63,7 +63,7 @@ export function RepoList({
                 {item.description || 'No description'}
               </ThemedText>
               <ThemedText type="caption" style={[styles.repoDate, { color: dateTextColor }]}>
-                Updated: {new Date(item.updated_at).toLocaleDateString()}
+                Updated {new Date(item.updated_at).toLocaleDateString()}
               </ThemedText>
               {renderExtraActions && (
                 <View style={styles.actionsContainer}>
@@ -74,9 +74,14 @@ export function RepoList({
           </TouchableOpacity>
         ))
       ) : (
-        <ThemedText type="body" style={styles.emptyState}>
-          {loading ? 'Loading repositories...' : 'No repositories found.'}
-        </ThemedText>
+        <ThemedView variant="card" style={styles.emptyStateContainer}>
+          <ThemedText type="subtitle" style={styles.emptyStateTitle}>
+            No Repositories Found
+          </ThemedText>
+          <ThemedText type="body" style={styles.emptyStateText}>
+            Your repositories will appear here once connected
+          </ThemedText>
+        </ThemedView>
       )}
     </ScrollView>
   );
@@ -97,8 +102,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   repoItem: {
-    padding: 16,
     marginBottom: 12,
+    marginHorizontal: 8,
   },
   repoHeader: {
     flexDirection: 'row',
@@ -112,7 +117,7 @@ const styles = StyleSheet.create({
   },
   languageBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   languageText: {
@@ -122,25 +127,33 @@ const styles = StyleSheet.create({
   },
   repoDescription: {
     marginBottom: 8,
-    lineHeight: 20,
+    lineHeight: 18,
+    opacity: 0.8,
   },
   repoDate: {
-    marginBottom: 4,
+    marginBottom: 8,
   },
   projectType: {
     marginBottom: 4,
     fontWeight: '500',
+    opacity: 0.7,
   },
   actionsContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: 'rgba(0,0,0,0.05)',
   },
-  emptyState: {
+  emptyStateContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    marginHorizontal: 8,
+  },
+  emptyStateTitle: {
+    marginBottom: 8,
+  },
+  emptyStateText: {
     textAlign: 'center',
     opacity: 0.7,
-    padding: 40,
-    fontSize: 16,
   },
 });

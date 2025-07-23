@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Modal, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { getGitHubUsername, getGoalChatHistory, setGoalChatHistory, ChatTurn, clearGoalChatHistory, getCachedGitHubData } from '../utils/storage';
-import { GoalAnalysisModal } from '../components/GoalAnalysisModal';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 interface Goal {
   id: string;
@@ -34,27 +34,14 @@ export default function GoalDetailsScreen() {
   const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Clear chat history when deleting a goal
-  const handleDeleteGoal = async () => {
-    if (!goal) return;
-    try {
-      const stored = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
-      let goals: Goal[] = [];
-      if (stored) goals = JSON.parse(stored);
-      const filtered = goals.filter(g => g.id !== goal.id);
-      await AsyncStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(filtered));
-      await clearGoalChatHistory(goal.id);
-      setGoal(null);
-      setChatHistory([]);
-    } catch (e) {
-      console.error('Failed to delete goal:', e);
-    }
-  };
-  const [showAnalysis, setShowAnalysis] = useState(false);
   const [username, setUsername] = useState<string>('');
   const [analysis, setAnalysis] = useState<GoalAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const accentColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'text');
+  
+  const accentColor = useThemeColor({}, 'tint');
+  const successColor = useThemeColor({}, 'success');
+  const borderColor = useThemeColor({}, 'border');
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     loadGoal();
@@ -100,15 +87,17 @@ export default function GoalDetailsScreen() {
 
   const handleAddProgress = async () => {
     if (!progressNote.trim() || !goal) return;
+    setSaving(true);
     const updatedGoal = {
       ...goal,
       progressNotes: [...goal.progressNotes, progressNote],
     };
     await saveGoal(updatedGoal);
-  const newHistory: ChatTurn[] = [...chatHistory, { role: 'user' as const, message: progressNote }].slice(-10);
-  setChatHistory(newHistory);
-  await setGoalChatHistory(goalId, newHistory);
+    const newHistory: ChatTurn[] = [...chatHistory, { role: 'user' as const, message: progressNote }].slice(-10);
+    setChatHistory(newHistory);
+    await setGoalChatHistory(goalId, newHistory);
     setProgressNote('');
+    setSaving(false);
   };
 
   const handleGetInsights = async () => {
@@ -165,207 +154,395 @@ export default function GoalDetailsScreen() {
 
 
   return (
-    <ScrollView style={styles.scrollContainer}>
-      <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {goal ? (
           goal.completed ? (
-            <>
-              <ThemedText type="title" style={styles.header}>{goal.title}</ThemedText>
-              <ThemedText style={styles.goalCategory}>{goal.category}</ThemedText>
-              <ThemedText style={styles.goalDescription}>{goal.description}</ThemedText>
-              <ThemedText style={styles.goalStatusText}>
-                Status: ✅ Completed
-              </ThemedText>
-              <ThemedText style={{ marginTop: 24, fontSize: 18, color: '#10b981', fontWeight: 'bold', textAlign: 'center' }}>
-                🎉 Congratulations on completing your goal!
-              </ThemedText>
-            </>
-          ) : (
-            <>
-              <ThemedText type="title" style={styles.header}>{goal.title}</ThemedText>
-              <ThemedText style={styles.goalCategory}>{goal.category}</ThemedText>
-              <ThemedText style={styles.goalDescription}>{goal.description}</ThemedText>
-              <ThemedText style={styles.goalStatusText}>
-                Status: {goal.completed ? '✅ Completed' : '⏳ In Progress'}
-              </ThemedText>
-              <ThemedText style={styles.sectionTitle}>Progress Notes</ThemedText>
-              {goal.progressNotes.length === 0 && (
-                <ThemedText style={styles.emptyState}>No progress notes yet.</ThemedText>
+            <ThemedView variant="elevated" style={styles.completedCard}>
+              <View style={styles.completedHeader}>
+                <View style={[styles.completedBadge, { backgroundColor: successColor }]}>
+                  <ThemedText style={styles.completedBadgeText}>✓ Completed</ThemedText>
+                </View>
+              </View>
+              
+              <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
+              
+              {goal.category && (
+                <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}>
+                  <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
+                </View>
               )}
-              {goal.progressNotes.map((note, idx) => (
-                <ThemedText key={idx} style={styles.progressNoteItem}>• {note}</ThemedText>
-              ))}
-              <View style={styles.progressInputRow}>
+              
+              {goal.description && (
+                <ThemedText type="body" style={styles.goalDescription}>
+                  {goal.description}
+                </ThemedText>
+              )}
+              
+              <ThemedView variant="surface" style={styles.congratsCard}>
+                <ThemedText type="subtitle" style={[styles.congratsText, { color: successColor }]}>
+                  🎉 Congratulations!
+                </ThemedText>
+                <ThemedText type="body" style={styles.congratsSubtext}>
+                  You've successfully completed this goal
+                </ThemedText>
+              </ThemedView>
+            </ThemedView>
+          ) : (
+            <ThemedView variant="elevated" style={styles.goalCard}>
+              <View style={styles.goalHeader}>
+                <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
+                
+                {goal.category && (
+                  <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}>
+                    <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
+                  </View>
+                )}
+              </View>
+              
+              {goal.description && (
+                <ThemedText type="body" style={styles.goalDescription}>
+                  {goal.description}
+                </ThemedText>
+              )}
+              
+              <View style={[styles.statusBadge, { backgroundColor: 'rgba(37, 99, 235, 0.1)' }]}>
+                <ThemedText style={[styles.statusText, { color: accentColor }]}>
+                  In Progress
+                </ThemedText>
+              </View>
+            </ThemedView>
+            
+            <ThemedView variant="card" style={styles.progressSection}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Progress Notes</ThemedText>
+              
+              {goal.progressNotes.length === 0 && (
+                <ThemedView variant="surface" style={styles.emptyState}>
+                  <ThemedText type="body" style={styles.emptyText}>
+                    No progress notes yet. Add your first update below.
+                  </ThemedText>
+                </ThemedView>
+              )}
+              
+              <View style={styles.progressList}>
+                {goal.progressNotes.map((note, idx) => (
+                  <ThemedView key={idx} variant="surface" style={styles.progressNoteItem}>
+                    <ThemedText type="body">{note}</ThemedText>
+                  </ThemedView>
+                ))}
+              </View>
+              
+              <View style={styles.addProgressSection}>
+                <ThemedText type="label" style={styles.inputLabel}>Add Progress Update</ThemedText>
                 <TextInput
-                  style={styles.progressInput}
-                  placeholder="Add progress note"
+                  style={[styles.progressInput, { borderColor }]}
+                  placeholder="What did you accomplish today?"
+                  placeholderTextColor={useThemeColor({}, 'secondary')}
                   value={progressNote}
                   onChangeText={setProgressNote}
+                  multiline
+                  numberOfLines={3}
                 />
                 <TouchableOpacity
-                  style={[styles.addProgressButton, { backgroundColor: accentColor }]}
+                  style={[
+                    styles.addProgressButton, 
+                    { 
+                      backgroundColor: progressNote.trim() ? accentColor : useThemeColor({}, 'secondary'),
+                      opacity: progressNote.trim() ? 1 : 0.6
+                    }
+                  ]}
                   onPress={handleAddProgress}
-                  disabled={saving}
+                  disabled={saving || !progressNote.trim()}
+                  activeOpacity={0.8}
                 >
-                  <ThemedText style={styles.addProgressButtonText}>Add</ThemedText>
+                  <ThemedText style={styles.addProgressButtonText}>
+                    {saving ? 'Adding...' : 'Add Progress'}
+                  </ThemedText>
                 </TouchableOpacity>
               </View>
-              {/* Get Insights Button */}
+            </ThemedView>
+            
+            <ThemedView variant="card" style={styles.insightsSection}>
               {!analysisLoading && (
                 <TouchableOpacity
-                  style={[styles.analyzeButton, { backgroundColor: accentColor }]}
+                  style={[styles.analyzeButton, { backgroundColor: successColor }]}
                   onPress={handleGetInsights}
+                  activeOpacity={0.8}
                 >
-                  <ThemedText style={styles.analyzeButtonText}>💡 Get Insights</ThemedText>
+                  <ThemedText style={styles.analyzeButtonText}>Get AI Insights</ThemedText>
                 </TouchableOpacity>
               )}
+              
               {analysisLoading && (
-                <View style={{ marginTop: 16, alignItems: 'center' }}>
-                  <ActivityIndicator size="large" />
-                  <ThemedText style={{ marginTop: 8 }}>Analyzing goal...</ThemedText>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={accentColor} />
+                  <ThemedText type="body" style={styles.loadingText}>Analyzing goal...</ThemedText>
                 </View>
               )}
-              {/* Inline AI Analysis Results */}
+              
               {analysis && (
-                <View style={styles.analysisBox}>
-                  <ThemedText style={styles.analysisTitle}>AI Suggestions:</ThemedText>
+                <ThemedView variant="surface" style={styles.analysisBox}>
+                  <ThemedText type="label" style={styles.analysisTitle}>AI Suggestions</ThemedText>
                   {analysis.suggestions?.map((s, i) => (
-                    <ThemedText key={i} style={styles.analysisItem}>• {s}</ThemedText>
+                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
                   ))}
-                  <ThemedText style={styles.analysisTitle}>Next Steps:</ThemedText>
+                  
+                  <ThemedText type="label" style={styles.analysisTitle}>Next Steps</ThemedText>
                   {analysis.next_steps?.map((s, i) => (
-                    <ThemedText key={i} style={styles.analysisItem}>• {s}</ThemedText>
+                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
                   ))}
-                  <ThemedText style={styles.analysisTitle}>Estimated Time:</ThemedText>
-                  <ThemedText style={styles.analysisItem}>{analysis.estimated_time}</ThemedText>
-                  <ThemedText style={styles.analysisTitle}>Resources:</ThemedText>
+                  
+                  <ThemedText type="label" style={styles.analysisTitle}>Estimated Time</ThemedText>
+                  <ThemedText type="body" style={styles.analysisItem}>{analysis.estimated_time}</ThemedText>
+                  
+                  <ThemedText type="label" style={styles.analysisTitle}>Resources</ThemedText>
                   {analysis.resources?.map((s, i) => (
-                    <ThemedText key={i} style={styles.analysisItem}>• {s}</ThemedText>
+                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
+                  ))}
+                </ThemedView>
+              )}
+              
+              {error && (
+                <ThemedView variant="surface" style={styles.errorContainer}>
+                  <ThemedText type="body" style={[styles.errorText, { color: useThemeColor({}, 'error') }]}>
+                    {error}
+                  </ThemedText>
+                </ThemedView>
+              )}
+            </ThemedView>
+
+            {chatHistory.length > 0 && (
+              <ThemedView variant="card" style={styles.chatSection}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>Chat History</ThemedText>
+                <View style={styles.chatList}>
+                  {chatHistory.map((turn, idx) => (
+                    <ThemedView 
+                      key={idx} 
+                      variant="surface" 
+                      style={[
+                        styles.chatMessage,
+                        turn.role === 'user' ? styles.userMessage : styles.aiMessage
+                      ]}
+                    >
+                      <ThemedText type="caption" style={styles.chatRole}>
+                        {turn.role === 'user' ? 'You' : 'AI Assistant'}
+                      </ThemedText>
+                      <ThemedText type="body" style={styles.chatText}>
+                        {turn.message}
+                      </ThemedText>
+                    </ThemedView>
                   ))}
                 </View>
-              )}
-
-              {/* Chat History Display (user progress and AI responses only) */}
-              <ThemedText style={styles.sectionTitle}>Chat History</ThemedText>
-              {chatHistory.length === 0 && (
-                <ThemedText style={styles.emptyState}>No chat yet.</ThemedText>
-              )}
-              {chatHistory.map((turn, idx) => (
-                turn.role === 'user' ? (
-                  <ThemedText key={idx} style={{ color: '#0c4a6e', marginBottom: 2 }}>
-                    <ThemedText style={{ fontWeight: 'bold' }}>You:</ThemedText> {turn.message}
-                  </ThemedText>
-                ) : (
-                  <ThemedText key={idx} style={{ color: '#10b981', marginBottom: 2 }}>
-                    <ThemedText style={{ fontWeight: 'bold' }}>AI:</ThemedText> {turn.message}
-                  </ThemedText>
-                )
-              ))}
-              {error && (
-                <ThemedText style={{ color: 'red', marginTop: 8 }}>{error}</ThemedText>
-              )}
-            </>
+              </ThemedView>
+            )}
           )
         ) : (
-          <ThemedText>Loading goal...</ThemedText>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={accentColor} />
+            <ThemedText type="body" style={styles.loadingText}>Loading goal...</ThemedText>
+          </View>
         )}
-      </ThemedView>
-    </ScrollView>
+        
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
   scrollContainer: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-    padding: 24,
+  completedCard: {
+    marginTop: 16,
+    marginHorizontal: 8,
   },
-  header: {
+  completedHeader: {
+    alignItems: 'flex-end',
     marginBottom: 16,
   },
-  goalCategory: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginBottom: 4,
+  completedBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  goalDescription: {
-    fontSize: 14,
-    marginBottom: 6,
+  completedBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  goalStatusText: {
-    fontSize: 13,
-    marginTop: 4,
-    color: '#007AFF',
+  goalCard: {
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 8,
-    fontSize: 15,
+  goalTitle: {
+    flex: 1,
+    marginRight: 12,
   },
-  emptyState: {
-    textAlign: 'center',
-    opacity: 0.7,
-    marginBottom: 8,
+  categoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  progressNoteItem: {
-    marginLeft: 8,
-    marginBottom: 2,
-    color: '#0c4a6e',
+  categoryText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
   },
-  progressInputRow: {
-    flexDirection: 'row',
+  goalDescription: {
+    marginBottom: 12,
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  congratsCard: {
     alignItems: 'center',
-    marginTop: 12,
+    paddingVertical: 24,
+    marginTop: 20,
+  },
+  congratsText: {
+    marginBottom: 12,
+  },
+  congratsSubtext: {
+    opacity: 0.8,
+    textAlign: 'center',
+  },
+  progressSection: {
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  sectionTitle: {
     marginBottom: 16,
   },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginBottom: 16,
+  },
+  emptyText: {
+    opacity: 0.7,
+    textAlign: 'center',
+  },
+  progressList: {
+    marginBottom: 20,
+  },
+  progressNoteItem: {
+    marginBottom: 8,
+    padding: 12,
+  },
+  addProgressSection: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    marginBottom: 8,
+  },
   progressInput: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    padding: 8,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginRight: 8,
+    fontSize: 15,
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   addProgressButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
+    alignItems: 'center',
   },
   addProgressButtonText: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  insightsSection: {
+    marginTop: 16,
+    marginHorizontal: 8,
   },
   analyzeButton: {
-    marginTop: 8,
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
+    marginBottom: 16,
   },
   analyzeButtonText: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  loadingText: {
+    marginTop: 12,
+    opacity: 0.7,
   },
   analysisBox: {
-    marginTop: 16,
     padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   analysisTitle: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-    fontSize: 14,
+    marginTop: 16,
+    marginBottom: 8,
   },
   analysisItem: {
-    marginLeft: 8,
-    marginBottom: 2,
-    color: '#374151',
+    marginBottom: 4,
+    opacity: 0.9,
+    lineHeight: 20,
+  },
+  errorContainer: {
+    padding: 12,
+    marginTop: 12,
+  },
+  errorText: {
+    textAlign: 'center',
+  },
+  chatSection: {
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  chatList: {
+    gap: 8,
+  },
+  chatMessage: {
+    padding: 12,
+  },
+  userMessage: {
+    marginLeft: 20,
+  },
+  aiMessage: {
+    marginRight: 20,
+  },
+  chatRole: {
+    marginBottom: 4,
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  chatText: {
+    lineHeight: 20,
+  },
+  bottomPadding: {
+    height: 20,
   },
 });
