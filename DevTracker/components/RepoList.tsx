@@ -28,24 +28,25 @@ export function RepoList({
   renderExtraActions,
 }: RepoListProps) {
   const accentColor = useThemeColor({}, 'tint');
+  const cardColor = useThemeColor({}, 'card');
   
   if (loading) {
     return (
-      <ThemedView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={accentColor} />
         <ThemedText type="body" style={styles.loadingText}>Loading repositories...</ThemedText>
-      </ThemedView>
+      </View>
     );
   }
   if (error) {
     return (
-      <ThemedView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <AIUnavailableState
           title="Repositories unavailable"
           description={error}
           icon="📁"
         />
-      </ThemedView>
+      </View>
     );
   }
   
@@ -58,7 +59,7 @@ export function RepoList({
             onPress={() => onRepoPress(item.name)}
             activeOpacity={0.8}
           >
-            <ThemedView variant="card" style={styles.repoItem}>
+            <View style={[styles.repoItem, { backgroundColor: cardColor }]}>
               <View style={styles.repoHeader}>
                 <ThemedText type="label" style={styles.repoName}>
                   {item.name}
@@ -85,18 +86,18 @@ export function RepoList({
                   {renderExtraActions(item)}
                 </View>
               )}
-            </ThemedView>
+            </View>
           </TouchableOpacity>
         ))
       ) : (
-        <ThemedView variant="card" style={styles.emptyStateContainer}>
+        <View style={[styles.emptyStateContainer, { backgroundColor: cardColor }]}>
           <ThemedText type="subtitle" style={styles.emptyStateTitle}>
             No Repositories Found
           </ThemedText>
           <ThemedText type="body" style={styles.emptyStateText}>
             Your repositories will appear here once connected
           </ThemedText>
-        </ThemedView>
+        </View>
       )}
     </ScrollView>
   );
@@ -117,8 +118,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   repoItem: {
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
     marginBottom: 12,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   repoHeader: {
     flexDirection: 'row',
@@ -160,9 +171,18 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0,0,0,0.05)',
   },
   emptyStateContainer: {
+    borderRadius: 12,
+    padding: 32,
+    marginHorizontal: 16,
     alignItems: 'center',
-    paddingVertical: 40,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   emptyStateTitle: {
     marginBottom: 8,

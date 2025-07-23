@@ -4,7 +4,7 @@ import { useThemeColor } from '../hooks/useThemeColor';
 export type ThemedViewProps = ViewProps & {
   lightColor?: string;
   darkColor?: string;
-  variant?: 'default' | 'card' | 'surface' | 'elevated';
+  variant?: 'default' | 'card' | 'surface';
 };
 
 export function ThemedView({ 
@@ -24,7 +24,6 @@ export function ThemedView({
   const variantStyle = 
     variant === 'card' ? styles.card : 
     variant === 'surface' ? styles.surface : 
-    variant === 'elevated' ? styles.elevated : 
     undefined;
 
   return (
@@ -43,13 +42,15 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 3,
   },
   surface: {
@@ -60,20 +61,8 @@ const styles = StyleSheet.create({
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  elevated: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
 });

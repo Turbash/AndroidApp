@@ -35,6 +35,13 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
   const [allCommits, setAllCommits] = useState<Record<string, any[]>>({});
   const [mlInsights, setMLInsights] = useState<MLInsightsType | null>(null);
   const router = useRouter();
+  
+  const colorScheme = useColorScheme();
+  const cardBg = useThemeColor({}, 'card');
+  const subtleTextColor = useThemeColor({}, 'secondary');
+  const dateTextColor = useThemeColor({}, 'secondary');
+  const tabBg = useThemeColor({}, 'card');
+  const accentColor = useThemeColor({}, 'tint');
 
   useEffect(() => {
     const initTokenAndLoad = async () => {
@@ -256,45 +263,30 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
     }
   };
 
-  const colorScheme = useColorScheme();
-  const cardBg = useThemeColor({}, 'card');
-  const subtleTextColor = useThemeColor({}, 'secondary');
-  const dateTextColor = useThemeColor({}, 'secondary');
-  const tabBg = useThemeColor({}, 'card');
-  const accentColor = useThemeColor({}, 'tint');
-
-  console.log('🎯 Render state:', {
-    loading,
-    hasUser: !!user,
-    reposCount: repos.length,
-    activeTab,
-    hasMLInsights: !!mlInsights
-  });
-
   if (loading) {
     return (
-      <ThemedView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={accentColor} />
         <ThemedText type="body" style={styles.loadingText}>Loading GitHub data...</ThemedText>
-      </ThemedView>
+      </View>
     );
   }
 
   if (!user) {
     return (
-      <ThemedView style={styles.errorContainer}>
+      <View style={styles.errorContainer}>
         <ThemedText type="subtitle" style={styles.errorTitle}>Failed to load GitHub data</ThemedText>
         <TouchableOpacity onPress={loadGitHubData} style={[styles.retryButton, { backgroundColor: accentColor }]}>
           <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
         </TouchableOpacity>
-      </ThemedView>
+      </View>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
 
-      <ThemedView variant="card" style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: cardBg }]}>
         <TouchableOpacity 
           style={[
             styles.tab, 
@@ -325,7 +317,7 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
             AI Insights
           </ThemedText>
         </TouchableOpacity>
-      </ThemedView>
+      </View>
 
       {activeTab === 'repos' ? (
         <RepoTabContent
@@ -347,14 +339,13 @@ export function GitHubDashboard({ username }: GitHubDashboardProps) {
           refreshGitHubDataOnly={refreshGitHubDataOnly}
         />
       )}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -377,10 +368,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 20,
+    borderRadius: 12,
     padding: 6,
+    marginHorizontal: 16,
+    marginVertical: 16,
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   tab: {
     flex: 1,

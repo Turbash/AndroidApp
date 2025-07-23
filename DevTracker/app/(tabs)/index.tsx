@@ -2,10 +2,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Octicons } from '@expo/vector-icons';
-import { StyleSheet, TouchableOpacity, View, StatusBar } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, StatusBar, ActivityIndicator } from 'react-native';
 import { GitHubDashboard } from '../../components/GitHubDashboard';
 import { ThemedText } from '../../components/ThemedText';
-import { ThemedView } from '../../components/ThemedView';
 import { getGitHubUsername } from '../../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColor } from '../../hooks/useThemeColor';
@@ -17,6 +16,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const accentColor = useThemeColor({}, 'tint');
   const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, 'background');
 
   useFocusEffect(
     useCallback(() => {
@@ -24,7 +24,6 @@ export default function DashboardScreen() {
       const loadData = async () => {
         const username = await getGitHubUsername();
         if (isActive) {
-          console.log('📦 Loaded GitHub username from storage:', username);
           setGithubUsername(username);
           setLoading(false);
         }
@@ -38,29 +37,24 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.loadingContainer}>
-          <ThemedText type="body" style={styles.loadingText}>Loading your dashboard...</ThemedText>
+          <ActivityIndicator size="large" color={accentColor} />
+          <ThemedText type="body" style={styles.loadingText}>Loading...</ThemedText>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      <View style={styles.header}>
-        <ThemedText type="title">Dashboard</ThemedText>
-        <ThemedText type="body" style={styles.headerSubtitle}>
-          Track your development progress
-        </ThemedText>
-      </View>
       {githubUsername ? (
         <GitHubDashboard username={githubUsername} />
       ) : (
         <View style={styles.connectContainer}>
-          <ThemedView variant="elevated" style={styles.connectCard}>
+          <View style={[styles.connectCard, { backgroundColor: useThemeColor({}, 'card') }]}>
             <View style={styles.connectIcon}>
               <Octicons name="mark-github" size={32} color={accentColor} />
             </View>
@@ -77,7 +71,7 @@ export default function DashboardScreen() {
             >
               <ThemedText style={styles.connectButtonText}>Connect GitHub Account</ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -87,15 +81,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  header: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  headerSubtitle: {
-    marginTop: 4,
-    opacity: 0.7,
   },
   loadingContainer: {
     flex: 1,
@@ -103,6 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    marginTop: 16,
     opacity: 0.7,
   },
   connectContainer: {
@@ -111,8 +97,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   connectCard: {
+    borderRadius: 16,
+    padding: 32,
     alignItems: 'center',
-    marginHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   connectIcon: {
     width: 72,

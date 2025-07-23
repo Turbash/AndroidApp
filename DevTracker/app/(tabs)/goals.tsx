@@ -30,6 +30,8 @@ export default function GoalsScreen() {
   const errorColor = useThemeColor({}, 'error');
   const borderColor = useThemeColor({}, 'border');
   const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardColor = useThemeColor({}, 'card');
   const router = useRouter();
 
   useEffect(() => {
@@ -107,16 +109,9 @@ export default function GoalsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
-      <View style={styles.header}>
-        <ThemedText type="title">Goals</ThemedText>
-        <ThemedText type="body" style={styles.headerSubtitle}>
-          Track your learning objectives
-        </ThemedText>
-      </View>
-
       <TouchableOpacity 
         style={[styles.addButton, { backgroundColor: accentColor }]} 
         onPress={() => setAdding(!adding)}
@@ -128,7 +123,7 @@ export default function GoalsScreen() {
       </TouchableOpacity>
 
       {adding && (
-        <ThemedView variant="card" style={styles.form}>
+        <View style={[styles.form, { backgroundColor: cardColor }]}>
           <TextInput
             style={[styles.input, { borderColor }]}
             placeholder="Goal Title"
@@ -159,17 +154,17 @@ export default function GoalsScreen() {
           >
             <ThemedText style={styles.saveButtonText}>Save Goal</ThemedText>
           </TouchableOpacity>
-        </ThemedView>
+        </View>
       )}
 
       <ScrollView style={styles.goalsList}>
         {goals.length === 0 && (
-          <ThemedView variant="card" style={styles.emptyState}>
+          <View style={[styles.emptyState, { backgroundColor: cardColor }]}>
             <ThemedText type="subtitle" style={styles.emptyTitle}>No Goals Yet</ThemedText>
             <ThemedText type="body" style={styles.emptyDescription}>
               Create your first learning goal to get started
             </ThemedText>
-          </ThemedView>
+          </View>
         )}
         {goals.map(goal => (
           <TouchableOpacity 
@@ -177,7 +172,7 @@ export default function GoalsScreen() {
             onPress={() => handleGoalPress(goal)}
             activeOpacity={0.7}
           >
-            <ThemedView variant="card" style={styles.goalCard}>
+            <View style={[styles.goalCard, { backgroundColor: cardColor }]}>
               <View style={styles.goalHeader}>
                 <TouchableOpacity 
                   onPress={() => toggleGoalCompleted(goal.id)}
@@ -239,7 +234,7 @@ export default function GoalsScreen() {
                   </ThemedText>
                 )}
               </View>
-            </ThemedView>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -250,23 +245,13 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  header: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  headerSubtitle: {
-    marginTop: 4,
-    opacity: 0.7,
   },
   addButton: {
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 16,
-    marginHorizontal: 8,
+    margin: 16,
   },
   addButtonText: {
     color: 'white',
@@ -274,8 +259,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   form: {
-    marginBottom: 20,
-    marginHorizontal: 8,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   input: {
     borderRadius: 8,
@@ -300,10 +295,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyState: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    marginHorizontal: 8,
+    borderRadius: 12,
+    padding: 32,
+    marginHorizontal: 16,
     marginTop: 40,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   emptyTitle: {
     marginBottom: 8,
@@ -313,8 +317,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   goalCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
     marginBottom: 12,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   goalHeader: {
     flexDirection: 'row',

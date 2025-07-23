@@ -23,6 +23,8 @@ export default function ProfileScreen() {
   const successColor = useThemeColor({}, 'success');
   const settingsButtonColor = useThemeColor({}, 'secondary');
   const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardColor = useThemeColor({}, 'card');
 
   useEffect(() => {
     loadProfileData();
@@ -70,7 +72,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.loadingContainer}>
           {error ? (
@@ -89,10 +91,10 @@ export default function ProfileScreen() {
 
   if (!githubUsername) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.emptyContainer}>
-          <ThemedView variant="elevated" style={styles.emptyCard}>
+          <View style={[styles.emptyCard, { backgroundColor: cardColor }]}>
             <ThemedText type="title" style={styles.emptyTitle}>No Profile Connected</ThemedText>
             <ThemedText type="body" style={styles.emptyDescription}>
               Connect your GitHub account to see your developer profile and statistics.
@@ -104,27 +106,21 @@ export default function ProfileScreen() {
             >
               <ThemedText style={styles.connectButtonText}>Connect GitHub</ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
-      <View style={styles.header}>
-        <ThemedText type="title">Profile</ThemedText>
-        <ThemedText type="body" style={styles.headerSubtitle}>
-          Your developer profile and statistics
-        </ThemedText>
-      </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {userProfile ? (
           <>
-            <ThemedView variant="elevated" style={styles.profileCard}>
+            <View style={[styles.profileCard, { backgroundColor: cardColor }]}>
               <View style={styles.profileHeader}>
                 <Image source={{ uri: userProfile.avatar_url }} style={styles.avatar} />
                 <View style={styles.profileInfo}>
@@ -166,7 +162,7 @@ export default function ProfileScreen() {
               >
                 <ThemedText style={styles.githubButtonText}>View on GitHub</ThemedText>
               </TouchableOpacity>
-            </ThemedView>
+            </View>
             
             <View style={styles.statsActionsRow}>
               <TouchableOpacity 
@@ -188,7 +184,7 @@ export default function ProfileScreen() {
             <GitHubStatsDisplay key={statsRefreshKey} username={githubUsername} languageCount={6} />
           </>
         ) : (
-          <ThemedView variant="card" style={styles.loadingCard}>
+          <View style={[styles.loadingCard, { backgroundColor: cardColor }]}>
             <ThemedText type="body">Loading profile data...</ThemedText>
             <TouchableOpacity 
               style={[styles.retryButton, { backgroundColor: accentColor }]}
@@ -197,7 +193,7 @@ export default function ProfileScreen() {
             >
               <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          </View>
         )}
         
         <TouchableOpacity
@@ -217,18 +213,9 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   scrollContainer: {
     flex: 1,
-  },
-  header: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  headerSubtitle: {
-    marginTop: 4,
-    opacity: 0.7,
   },
   loadingContainer: {
     flex: 1,
@@ -244,7 +231,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emptyCard: {
+    borderRadius: 16,
+    padding: 32,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   emptyTitle: {
     marginBottom: 8,
@@ -268,8 +265,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   profileCard: {
-    marginBottom: 20,
-    marginHorizontal: 8,
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -330,9 +338,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   loadingCard: {
+    borderRadius: 12,
+    padding: 32,
+    marginHorizontal: 16,
     alignItems: 'center',
-    paddingVertical: 32,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   retryButton: {
     marginTop: 16,
@@ -350,8 +367,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
-    marginHorizontal: 8,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   settingsButtonText: {
     color: 'white',
@@ -360,8 +377,8 @@ const styles = StyleSheet.create({
   statsActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   refreshButton: {
     flex: 1,

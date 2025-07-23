@@ -33,6 +33,7 @@ export function RepoTabContent({
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const accentColor = useThemeColor({}, 'tint');
+  const cardColor = useThemeColor({}, 'card');
 
   const handleAnalyseRepo = async (repo: any) => {
     setAnalysisLoading(true);
@@ -62,22 +63,19 @@ export function RepoTabContent({
   };
 
   return (
-    <ThemedView style={{ flex: 1, paddingHorizontal: 16 }}>
+    <View style={{ flex: 1 }}>
       {/* Last updated time only, human readable */}
       {lastFetched && (
-        <ThemedText style={{ color: subtleTextColor, marginBottom: 12, marginTop: 8, textAlign: 'center' }}>
+        <ThemedText style={{ color: subtleTextColor, marginBottom: 12, textAlign: 'center', paddingHorizontal: 16 }}>
           Last updated: {formatTimeAgo(lastFetched)}
         </ThemedText>
       )}
       <TouchableOpacity
         onPress={refreshData}
-        style={{ backgroundColor: accentColor, width: '100%', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 16 }}
+        style={{ backgroundColor: accentColor, paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginHorizontal: 16, marginBottom: 16 }}
       >
         <ThemedText style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>📡 Refresh Data</ThemedText>
       </TouchableOpacity>
-      <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-        Recent Repositories
-      </ThemedText>
       <RepoList
         repos={repos}
         projectTypes={projectTypes}
@@ -94,15 +92,11 @@ export function RepoTabContent({
           </TouchableOpacity>
         )}
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
   analyseButton: {
     backgroundColor: '#6366f1',
     paddingVertical: 8,

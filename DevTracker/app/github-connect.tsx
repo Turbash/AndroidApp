@@ -20,6 +20,8 @@ export default function GitHubConnectScreen() {
 
   const accentColor = useThemeColor({}, 'tint');
   const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardColor = useThemeColor({}, 'card');
 
   const handleConnect = async () => {
     setLoading(true);
@@ -78,11 +80,11 @@ export default function GitHubConnectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
       <View style={styles.content}>
-        <ThemedView variant="elevated" style={styles.connectCard}>
+        <View style={[styles.connectCard, { backgroundColor: cardColor }]}>
           <View style={styles.iconContainer}>
             <Octicons name="mark-github" size={48} color={accentColor} />
           </View>
@@ -115,7 +117,7 @@ export default function GitHubConnectScreen() {
           <ThemedText type="caption" style={styles.helpText}>
             We'll redirect you to GitHub to authorize the connection
           </ThemedText>
-        </ThemedView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -125,7 +127,6 @@ export default function GitHubConnectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   content: {
     flex: 1,
@@ -133,7 +134,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   connectCard: {
+    borderRadius: 20,
+    padding: 40,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   iconContainer: {
     width: 96,

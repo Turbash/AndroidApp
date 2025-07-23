@@ -44,6 +44,8 @@ export default function GoalDetailsScreen() {
   const borderColor = useThemeColor({}, 'border');
   const secondaryColor = useThemeColor({}, 'secondary');
   const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardColor = useThemeColor({}, 'card');
 
   useEffect(() => {
     loadGoal();
@@ -156,13 +158,13 @@ export default function GoalDetailsScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {goal ? (
           goal.completed ? (
-            <ThemedView variant="elevated" style={styles.completedCard}>
+            <View style={[styles.completedCard, { backgroundColor: cardColor }]}>
               <View style={styles.completedHeader}>
                 <View style={[styles.completedBadge, { backgroundColor: successColor }]}>
                   <ThemedText style={styles.completedBadgeText}>✓ Completed</ThemedText>
@@ -183,18 +185,18 @@ export default function GoalDetailsScreen() {
                 </ThemedText>
               )}
               
-              <ThemedView variant="surface" style={styles.congratsCard}>
+              <View style={[styles.congratsCard, { backgroundColor: useThemeColor({}, 'surface') }]}>
                 <ThemedText type="subtitle" style={[styles.congratsText, { color: successColor }]}>
                   🎉 Congratulations!
                 </ThemedText>
                 <ThemedText type="body" style={styles.congratsSubtext}>
                   You've successfully completed this goal
                 </ThemedText>
-              </ThemedView>
-            </ThemedView>
+              </View>
+            </View>
           ) : (
             <>
-              <ThemedView variant="elevated" style={styles.goalCard}>
+              <View style={[styles.goalCard, { backgroundColor: cardColor }]}>
                 <View style={styles.goalHeader}>
                   <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
                   {goal.category && (
@@ -213,21 +215,21 @@ export default function GoalDetailsScreen() {
                     In Progress
                   </ThemedText>
                 </View>
-              </ThemedView>
-              <ThemedView variant="card" style={styles.progressSection}>
+              </View>
+              <View style={[styles.progressSection, { backgroundColor: cardColor }]}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>Progress Notes</ThemedText>
                 {goal.progressNotes.length === 0 && (
-                  <ThemedView variant="surface" style={styles.emptyState}>
+                  <View style={[styles.emptyState, { backgroundColor: useThemeColor({}, 'surface') }]}>
                     <ThemedText type="body" style={styles.emptyText}>
                       No progress notes yet. Add your first update below.
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                 )}
                 <View style={styles.progressList}>
                   {goal.progressNotes.map((note, idx) => (
-                    <ThemedView key={idx} variant="surface" style={styles.progressNoteItem}>
+                    <View key={idx} style={[styles.progressNoteItem, { backgroundColor: useThemeColor({}, 'surface') }]}>
                       <ThemedText type="body">{note}</ThemedText>
-                    </ThemedView>
+                    </View>
                   ))}
                 </View>
                 <View style={styles.addProgressSection}>
@@ -258,8 +260,8 @@ export default function GoalDetailsScreen() {
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
-              </ThemedView>
-              <ThemedView variant="card" style={styles.insightsSection}>
+              </View>
+              <View style={[styles.insightsSection, { backgroundColor: cardColor }]}>
                 {!analysisLoading && (
                   <TouchableOpacity
                     style={[styles.analyzeButton, { backgroundColor: successColor }]}
@@ -276,7 +278,7 @@ export default function GoalDetailsScreen() {
                   </View>
                 )}
                 {analysis && (
-                  <ThemedView variant="surface" style={styles.analysisBox}>
+                  <View style={[styles.analysisBox, { backgroundColor: useThemeColor({}, 'surface') }]}>
                     <ThemedText type="label" style={styles.analysisTitle}>AI Suggestions</ThemedText>
                     {analysis.suggestions?.map((s, i) => (
                       <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
@@ -291,7 +293,7 @@ export default function GoalDetailsScreen() {
                     {analysis.resources?.map((s, i) => (
                       <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
                     ))}
-                  </ThemedView>
+                  </View>
                 )}
                 {error && (
                   <AIUnavailableState
@@ -300,17 +302,17 @@ export default function GoalDetailsScreen() {
                     icon="🤖"
                   />
                 )}
-              </ThemedView>
+              </View>
               {chatHistory.length > 0 && (
-                <ThemedView variant="card" style={styles.chatSection}>
+                <View style={[styles.chatSection, { backgroundColor: cardColor }]}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>Chat History</ThemedText>
                   <View style={styles.chatList}>
                     {chatHistory.map((turn, idx) => (
-                      <ThemedView 
+                      <View 
                         key={idx} 
-                        variant="surface" 
                         style={[
                           styles.chatMessage,
+                          { backgroundColor: useThemeColor({}, 'surface') },
                           turn.role === 'user' ? styles.userMessage : styles.aiMessage
                         ]}
                       >
@@ -320,10 +322,10 @@ export default function GoalDetailsScreen() {
                         <ThemedText type="body" style={styles.chatText}>
                           {turn.message}
                         </ThemedText>
-                      </ThemedView>
+                      </View>
                     ))}
                   </View>
-                </ThemedView>
+                </View>
               )}
             </>
           )
@@ -343,14 +345,23 @@ export default function GoalDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   scrollContainer: {
     flex: 1,
   },
   completedCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
     marginTop: 16,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   completedHeader: {
     alignItems: 'flex-end',
@@ -367,8 +378,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   goalCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
     marginTop: 16,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   goalHeader: {
     flexDirection: 'row',
@@ -406,9 +427,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   congratsCard: {
-    alignItems: 'center',
-    paddingVertical: 24,
+    borderRadius: 12,
+    padding: 24,
     marginTop: 20,
+    alignItems: 'center',
   },
   congratsText: {
     marginBottom: 12,
@@ -418,16 +440,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
     marginTop: 16,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   sectionTitle: {
     marginBottom: 16,
   },
   emptyState: {
-    alignItems: 'center',
-    paddingVertical: 24,
+    borderRadius: 8,
+    padding: 24,
     marginBottom: 16,
+    alignItems: 'center',
   },
   emptyText: {
     opacity: 0.7,
@@ -437,8 +470,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   progressNoteItem: {
-    marginBottom: 8,
+    borderRadius: 8,
     padding: 12,
+    marginBottom: 8,
   },
   addProgressSection: {
     marginBottom: 16,
@@ -466,8 +500,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   insightsSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
     marginTop: 16,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   analyzeButton: {
     paddingVertical: 12,
@@ -489,6 +533,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   analysisBox: {
+    borderRadius: 8,
     padding: 16,
   },
   analysisTitle: {
@@ -508,13 +553,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   chatSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
     marginTop: 16,
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   chatList: {
     gap: 8,
   },
   chatMessage: {
+    borderRadius: 8,
     padding: 12,
   },
   userMessage: {
