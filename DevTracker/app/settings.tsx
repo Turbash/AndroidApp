@@ -88,6 +88,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: 4,
     opacity: 0.7,
+    fontSize: 13,
   },
   scrollContainer: {
     flex: 1,

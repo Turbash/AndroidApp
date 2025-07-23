@@ -245,6 +245,77 @@ return (
               </View>
             </>
           )}
+          {/* Get AI Analysis Button */}
+          <TouchableOpacity
+            style={[styles.showHistoryButton, { backgroundColor: accentColor }]}
+            onPress={handleGetInsights}
+            disabled={analysisLoading}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.showHistoryButtonText}>
+              {analysisLoading ? 'Analyzing...' : 'Get AI Analysis'}
+            </ThemedText>
+          </TouchableOpacity>
+          {/* AI Analysis Box (centered, green, between buttons) */}
+          {analysis && (
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              <View style={{
+                backgroundColor: "#075E54",
+                borderRadius: 16,
+                padding: 16,
+                width: '85%',
+                shadowColor: cardColor,
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.08,
+                shadowRadius: 3,
+                alignSelf: 'center',
+              }}>
+                <ThemedText type="label" style={[styles.analysisTitle, { color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }]}>AI Analysis</ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Suggestions:</ThemedText>
+                  {analysis.suggestions?.length ? (
+                    <>
+                      {'\n'}
+                      {analysis.suggestions.map((s, i) => (
+                        <ThemedText key={i} type="body" style={{ color: 'white', marginLeft: 8 }}>{s}</ThemedText>
+                      ))}
+                    </>
+                  ) : null}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Next Steps:</ThemedText>
+                  {analysis.next_steps?.length ? (
+                    <>
+                      {'\n'}
+                      {analysis.next_steps.map((s, i) => (
+                        <ThemedText key={i} type="body" style={{ color: 'white', marginLeft: 8 }}>{s}</ThemedText>
+                      ))}
+                    </>
+                  ) : null}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Estimated Time:</ThemedText>
+                  {analysis.estimated_time ? (
+                    <>
+                      {'\n'}
+                      <ThemedText type="body" style={{ color: 'white', marginLeft: 8 }}>{analysis.estimated_time}</ThemedText>
+                    </>
+                  ) : null}
+                </ThemedText>
+                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
+                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Resources:</ThemedText>
+                  {analysis.resources?.length ? (
+                    <>
+                      {'\n'}
+                      {analysis.resources.map((s, i) => (
+                        <ThemedText key={i} type="body" style={{ color: 'white', marginLeft: 8 }}>{s}</ThemedText>
+                      ))}
+                    </>
+                  ) : null}
+                </ThemedText>
+              </View>
+            </View>
+          )}
           {/* Single Chat History Toggle Button and Section */}
           <TouchableOpacity
             style={[styles.showHistoryButton, { backgroundColor: accentColor }]}
@@ -256,42 +327,8 @@ return (
             </ThemedText>
           </TouchableOpacity>
           {showChatHistory && (
-            <View style={[styles.chatSection, { backgroundColor: cardColor }]}> 
+            <View style={{ width: '100%', marginTop: 16 }}>
               <ChatHistory chatHistory={chatHistory} username={username} />
-            </View>
-          )}
-          {/* Unified Analysis Section (shared) */}
-          {analysis && (
-            <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
-              <View style={{
-                backgroundColor: secondaryColor,
-                borderRadius: 16,
-                padding: 16,
-                maxWidth: '80%',
-                shadowColor: cardColor,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-                alignSelf: 'flex-start',
-              }}>
-                <ThemedText type="label" style={[styles.analysisTitle, { color: 'white', fontWeight: 'bold', fontSize: 16 }]}>AI Analysis</ThemedText>
-                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
-                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Suggestions:</ThemedText>{'\n'}
-                  {analysis.suggestions?.map((s, i) => `• ${s}`).join('\n')}
-                </ThemedText>
-                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
-                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Next Steps:</ThemedText>{'\n'}
-                  {analysis.next_steps?.map((s, i) => `• ${s}`).join('\n')}
-                </ThemedText>
-                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
-                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Estimated Time:</ThemedText>{'\n'}
-                  {analysis.estimated_time}
-                </ThemedText>
-                <ThemedText type="body" style={[styles.analysisItem, { color: 'white' }]}> 
-                  <ThemedText type="body" style={{ fontWeight: 'bold', color: 'white', fontSize: 15 }}>Resources:</ThemedText>{'\n'}
-                  {analysis.resources?.map((s, i) => `• ${s}`).join('\n')}
-                </ThemedText>
-              </View>
             </View>
           )}
           {error && (
@@ -471,6 +508,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.12)', 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addProgressSection: {
     marginBottom: 16,

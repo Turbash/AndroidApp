@@ -31,6 +31,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="github-connect" options={{ title: "Connect GitHub" }} />
         <Stack.Screen name="repo-details" options={{ title: "Repository Details" }} />
+        <Stack.Screen name="settings" options={{headerShown:false}}/>
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

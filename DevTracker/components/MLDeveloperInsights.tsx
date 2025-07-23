@@ -13,7 +13,6 @@ import { MLInsightsLearningPath } from './MLInsightsLearningPath';
 import { MLInsightsHours } from './MLInsightsHours';
 import { MLInsightsProjectComplexity } from './MLInsightsProjectComplexity';
 import { MLInsightsCodingPatterns } from './MLInsightsCodingPatterns';
-import { MLInsightsFooter } from './MLInsightsFooter';
 
 interface MLDeveloperInsightsProps {
   insights: any; 
@@ -43,7 +42,6 @@ export function MLDeveloperInsights({ insights, username }: MLDeveloperInsightsP
         <MLInsightsHours estimatedHours={insights.estimated_hours} />
         <MLInsightsProjectComplexity projectComplexity={insights.project_complexity} />
         <MLInsightsCodingPatterns codingPatterns={insights.coding_patterns} />
-        <MLInsightsFooter aiSuccess={insights.ai_success} source={insights.source} />
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>

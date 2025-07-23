@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet,View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { AIUnavailableState } from './AIUnavailableState';
 
 export function RepoAnalysisDisplay({ analysis }: { analysis: any }) {
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
         📝 Summary
       </ThemedText>
@@ -45,11 +45,7 @@ export function RepoAnalysisDisplay({ analysis }: { analysis: any }) {
             <ThemedText key={i} style={styles.listItem}>• {s}</ThemedText>
           ))
         : <AIUnavailableState title="Recommendations unavailable" description="No recommendations provided by AI." icon="💡" />}
-
-      <ThemedText style={styles.footer}>
-        AI Success: {analysis.ai_success ? "Yes" : "No"} | Source: {analysis.source}
-      </ThemedText>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -68,11 +64,5 @@ const styles = StyleSheet.create({
   listItem: {
     marginLeft: 8,
     marginBottom: 2,
-  },
-  footer: {
-    marginTop: 16,
-    fontSize: 12,
-    opacity: 0.7,
-    textAlign: 'center',
   },
 });

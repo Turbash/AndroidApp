@@ -23,14 +23,14 @@ export default function TabLayout() {
           backgroundColor,
           borderTopWidth: 1,
           borderTopColor: useThemeColor({}, 'border'),
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
+          paddingBottom: 2,
+          paddingTop: 2,
+          height: 52,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-          marginTop: 4,
+          fontSize: 10,
+          fontWeight: '500',
+          marginTop: 0,
         },
         headerShown: false,
       }}
@@ -40,8 +40,8 @@ export default function TabLayout() {
         component={DashboardScreen}
         options={{ 
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <ThemedText style={{ fontSize: size, color }}>📊</ThemedText>
+          tabBarIcon: ({ color }) => (
+            <ThemedText style={{ fontSize: 18, color }}>🏠</ThemedText>
           )
         }}
       />
@@ -50,8 +50,8 @@ export default function TabLayout() {
         component={GoalsScreen}
         options={{ 
           title: 'Goals',
-          tabBarIcon: ({ color, size }) => (
-            <ThemedText style={{ fontSize: size, color }}>🎯</ThemedText>
+          tabBarIcon: ({ color }) => (
+            <ThemedText style={{ fontSize: 18, color }}>✅</ThemedText>
           )
         }}
       />
@@ -60,8 +60,8 @@ export default function TabLayout() {
         component={ProfileScreen}
         options={{ 
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <ThemedText style={{ fontSize: size, color }}>👤</ThemedText>
+          tabBarIcon: ({ color }) => (
+            <ThemedText style={{ fontSize: 18, color }}>�‍♂️</ThemedText>
           )
         }}
       />

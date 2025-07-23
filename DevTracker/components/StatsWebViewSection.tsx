@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statsContainer: {
-    marginBottom: 16,
+    marginTop: 16,
     alignItems: 'center',
     width: '100%',
   },
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     alignSelf: 'flex-start',
-    marginLeft: 8,
+    marginLeft: 16,
     color: '#60a5fa',
   },
   sectionTitleLanguages: {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     alignSelf: 'flex-start',
-    marginLeft: 8,
+    marginLeft: 16,
     color: '#f59e42',
   },
   webViewOuter: {

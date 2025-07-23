@@ -2,15 +2,17 @@ import { useRouter } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View, StatusBar } from 'react-native';
-import { GitHubStatsDisplay } from '../../components/GitHubStatsDisplay';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { AIUnavailableState } from '../../components/AIUnavailableState';
 import { getCachedGitHubData, getGitHubUsername } from '../../utils/storage';
 import { getCachedUserProfile, fetchUserProfile } from '../../services/github';
+import { GitHubStatsService } from '../../services/githubStats';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import { WebView } from 'react-native-webview';
+import { StatsWebViewSection } from '../../components/StatsWebViewSection';
 
 export default function ProfileScreen() {
   const [githubUsername, setGithubUsername] = useState<string>('');
@@ -73,6 +75,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.loadingContainer}>
           {error ? (
@@ -113,11 +116,21 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}> 
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
-
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.settingsButtonContainer}>
+          <TouchableOpacity
+            style={[styles.settingsButtonRounded, { backgroundColor: cardColor }]}
+            onPress={() => router.push('/settings')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.settingsButtonContent}>
+              <ThemedText style={styles.settingsIconBright}>⚙️</ThemedText>
+              <ThemedText style={styles.settingsButtonRoundedText}>Settings</ThemedText>
+            </View>
+          </TouchableOpacity>
+        </View>
         {userProfile ? (
           <>
             <View style={[styles.profileCard, { backgroundColor: cardColor }]}>
@@ -180,8 +193,8 @@ export default function ProfileScreen() {
                 <ThemedText style={styles.refreshButtonText}>Refresh Profile</ThemedText>
               </TouchableOpacity>
             </View>
-            
-            <GitHubStatsDisplay key={statsRefreshKey} username={githubUsername} languageCount={6} />
+            <View style={{ height: 10 }}></View>
+            <StatsWebViewSection validatedUsername={githubUsername} languageCount={6} />
           </>
         ) : (
           <View style={[styles.loadingCard, { backgroundColor: cardColor }]}>
@@ -196,14 +209,6 @@ export default function ProfileScreen() {
           </View>
         )}
         
-        <TouchableOpacity
-          style={[styles.settingsButton, { backgroundColor: settingsButtonColor }]}
-          onPress={() => router.push('/settings')}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={styles.settingsButtonText}>Settings</ThemedText>
-        </TouchableOpacity>
-        
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -211,6 +216,93 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  settingsButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  settingsButtonRounded: {
+    width: '92%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 18,
+    backgroundColor: '#FFD600',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  // ...existing code...
+  settingsButtonRoundedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 17,
+    letterSpacing: 0.5,
+  },
+  settingsButtonFullWidth: {
+    width: '100%',
+    paddingVertical: 14,
+    paddingHorizontal: 0,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  settingsButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  settingsIconBright: {
+    color: '#fff',
+    fontSize: 22,
+    marginRight: 8,
+    fontWeight: 'bold',
+    textShadowColor: '#222',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  settingsButtonFullWidthText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
+  settingsButtonWrapper: {
+    width: '100%',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  settingsButtonModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  settingsButtonModernText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
   container: {
     flex: 1,
   },
@@ -296,15 +388,17 @@ const styles = StyleSheet.create({
   },
   name: {
     marginBottom: 4,
+    fontSize: 16,
   },
   username: {
     opacity: 0.7,
-    marginBottom: 8,
+    fontSize: 13,
   },
   bio: {
     fontStyle: 'italic',
     opacity: 0.8,
-    lineHeight: 20,
+    lineHeight: 18,
+    fontSize: 13,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -323,9 +417,11 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     marginBottom: 4,
+    fontSize: 15,
   },
   statLabel: {
     opacity: 0.7,
+    fontSize: 12,
   },
   githubButton: {
     paddingHorizontal: 32,
@@ -336,6 +432,7 @@ const styles = StyleSheet.create({
   githubButtonText: {
     color: 'white',
     fontWeight: '600',
+    fontSize: 13,
   },
   loadingCard: {
     borderRadius: 12,

@@ -1,9 +1,7 @@
-// Fetch all text/code files in a repo (up to a size limit), concatenate them, and return as a string
 export async function fetchAllRepoCode(username: string, repoName: string, branch: string = 'main', maxTotalBytes: number = 40000): Promise<string> {
   try {
     const encodedUsername = encodeURIComponent(username.trim());
     const encodedRepoName = encodeURIComponent(repoName.trim());
-    // Get the repo tree recursively
     const treeUrl = `${GITHUB_API_BASE}/repos/${encodedUsername}/${encodedRepoName}/git/trees/${branch}?recursive=1`;
     const treeResp = await fetchWithAuth(treeUrl);
     if (!treeResp.ok) {
@@ -12,7 +10,6 @@ export async function fetchAllRepoCode(username: string, repoName: string, branc
     }
     const treeData = await treeResp.json();
     if (!treeData.tree) return '';
-    // Filter for text/code files (exclude binaries/images by extension)
     const textExtensions = ['.js', '.ts', '.py', '.java', '.go', '.rb', '.cpp', '.c', '.h', '.cs', '.php', '.rs', '.swift', '.kt', '.m', '.json', '.yml', '.yaml', '.md', '.txt', '.sh', '.pl', '.rb', '.html', '.css', '.scss', '.tsx', '.jsx'];
     const files = treeData.tree.filter((item: any) => item.type === 'blob' && textExtensions.some(ext => item.path.endsWith(ext)));
     let totalBytes = 0;
@@ -39,7 +36,6 @@ export async function fetchAllRepoCode(username: string, repoName: string, branc
     return '';
   }
 }
-// Fetch a code file (e.g., main file or first file in repo) for analysis
 export async function fetchRepoCodeSample(username: string, repoName: string, filePath: string = 'README.md'): Promise<string | null> {
   try {
     const encodedUsername = encodeURIComponent(username.trim());
@@ -248,7 +244,7 @@ export async function fetchUserProfile(username: string, forceRefresh: boolean =
   }
   
   const profile = await response.json();
-  await setCachedUserProfile(username, profile); // always cache permanently
+  await setCachedUserProfile(username, profile); 
   console.log(`✅ User profile loaded: ${profile.name} (@${profile.login})`);
   
   return profile;

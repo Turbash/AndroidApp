@@ -11,9 +11,9 @@ export class GitHubStatsService {
     const normalizedUsername = username.toLowerCase();
     console.log(`📊 Fetching GitHub stats for ${normalizedUsername} (normalized from ${username}) with ${languageCount} languages`);
     
-    const statsUrl = `https://github-readme-stats.vercel.app/api?username=${normalizedUsername}&show_icons=true&count_private=true&include_all_commits=true&theme=dark&hide_border=true&bg_color=0d1117`;
-    const languagesUrl = `https://github-readme-stats.vercel.app/api/top-langs/?username=${normalizedUsername}&layout=compact&langs_count=${languageCount}&theme=dark&hide_border=true&bg_color=0d1117`;
-    
+    const statsUrl = `https://github-readme-stats.vercel.app/api?username=${normalizedUsername}&show_icons=true&count_private=true&include_all_commits=true&theme=transparent&hide_border=true&bg_color=0d1117`;
+    const languagesUrl = `https://github-readme-stats.vercel.app/api/top-langs/?username=${normalizedUsername}&layout=compact&langs_count=${languageCount}&theme=transparent&hide_border=true&bg_color=0d1117`;
+
     try {
       console.log('🔗 Stats URL:', statsUrl);
       console.log('🔗 Languages URL:', languagesUrl);
