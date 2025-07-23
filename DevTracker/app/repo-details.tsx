@@ -15,6 +15,7 @@ import { RepoLanguages } from '../components/RepoLanguages';
 import { RepoReadmePreview } from '../components/RepoReadmePreview';
 import { RepoCommitsList } from '../components/RepoCommitsList';
 import { RepoAnalysisDisplay } from '../components/RepoAnalysisDisplay';
+import { AIUnavailableState } from '../components/AIUnavailableState';
 
 export default function RepoDetailsScreen() {
   const { repoName, autoAnalyze } = useLocalSearchParams<{ repoName: string, autoAnalyze?: string }>();
@@ -157,9 +158,11 @@ export default function RepoDetailsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <ThemedText style={styles.errorIcon}>⚠️</ThemedText>
-        <ThemedText type="subtitle" style={styles.errorTitle}>Error</ThemedText>
-        <ThemedText type="body" style={styles.errorMessage}>{error}</ThemedText>
+        <AIUnavailableState
+          title="Repository data unavailable"
+          description={error}
+          icon="📦"
+        />
         <TouchableOpacity 
           style={[styles.retryButton, { backgroundColor: accentColor }]}
           onPress={loadRepoData}

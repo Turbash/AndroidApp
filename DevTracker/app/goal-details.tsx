@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
+import { AIUnavailableState } from '../components/AIUnavailableState';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { getGitHubUsername, getGoalChatHistory, setGoalChatHistory, ChatTurn, clearGoalChatHistory, getCachedGitHubData } from '../utils/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +42,7 @@ export default function GoalDetailsScreen() {
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
   const borderColor = useThemeColor({}, 'border');
+  const secondaryColor = useThemeColor({}, 'secondary');
   const colorScheme = useColorScheme();
 
   useEffect(() => {
@@ -191,152 +193,139 @@ export default function GoalDetailsScreen() {
               </ThemedView>
             </ThemedView>
           ) : (
-            <ThemedView variant="elevated" style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
-                
-                {goal.category && (
-                  <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}>
-                    <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
-                  </View>
-                )}
-              </View>
-              
-              {goal.description && (
-                <ThemedText type="body" style={styles.goalDescription}>
-                  {goal.description}
-                </ThemedText>
-              )}
-              
-              <View style={[styles.statusBadge, { backgroundColor: 'rgba(37, 99, 235, 0.1)' }]}>
-                <ThemedText style={[styles.statusText, { color: accentColor }]}>
-                  In Progress
-                </ThemedText>
-              </View>
-            </ThemedView>
-            
-            <ThemedView variant="card" style={styles.progressSection}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>Progress Notes</ThemedText>
-              
-              {goal.progressNotes.length === 0 && (
-                <ThemedView variant="surface" style={styles.emptyState}>
-                  <ThemedText type="body" style={styles.emptyText}>
-                    No progress notes yet. Add your first update below.
-                  </ThemedText>
-                </ThemedView>
-              )}
-              
-              <View style={styles.progressList}>
-                {goal.progressNotes.map((note, idx) => (
-                  <ThemedView key={idx} variant="surface" style={styles.progressNoteItem}>
-                    <ThemedText type="body">{note}</ThemedText>
-                  </ThemedView>
-                ))}
-              </View>
-              
-              <View style={styles.addProgressSection}>
-                <ThemedText type="label" style={styles.inputLabel}>Add Progress Update</ThemedText>
-                <TextInput
-                  style={[styles.progressInput, { borderColor }]}
-                  placeholder="What did you accomplish today?"
-                  placeholderTextColor={useThemeColor({}, 'secondary')}
-                  value={progressNote}
-                  onChangeText={setProgressNote}
-                  multiline
-                  numberOfLines={3}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.addProgressButton, 
-                    { 
-                      backgroundColor: progressNote.trim() ? accentColor : useThemeColor({}, 'secondary'),
-                      opacity: progressNote.trim() ? 1 : 0.6
-                    }
-                  ]}
-                  onPress={handleAddProgress}
-                  disabled={saving || !progressNote.trim()}
-                  activeOpacity={0.8}
-                >
-                  <ThemedText style={styles.addProgressButtonText}>
-                    {saving ? 'Adding...' : 'Add Progress'}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </ThemedView>
-            
-            <ThemedView variant="card" style={styles.insightsSection}>
-              {!analysisLoading && (
-                <TouchableOpacity
-                  style={[styles.analyzeButton, { backgroundColor: successColor }]}
-                  onPress={handleGetInsights}
-                  activeOpacity={0.8}
-                >
-                  <ThemedText style={styles.analyzeButtonText}>Get AI Insights</ThemedText>
-                </TouchableOpacity>
-              )}
-              
-              {analysisLoading && (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={accentColor} />
-                  <ThemedText type="body" style={styles.loadingText}>Analyzing goal...</ThemedText>
+            <>
+              <ThemedView variant="elevated" style={styles.goalCard}>
+                <View style={styles.goalHeader}>
+                  <ThemedText type="title" style={styles.goalTitle}>{goal.title}</ThemedText>
+                  {goal.category && (
+                    <View style={[styles.categoryBadge, { backgroundColor: accentColor }]}> 
+                      <ThemedText style={styles.categoryText}>{goal.category}</ThemedText>
+                    </View>
+                  )}
                 </View>
-              )}
-              
-              {analysis && (
-                <ThemedView variant="surface" style={styles.analysisBox}>
-                  <ThemedText type="label" style={styles.analysisTitle}>AI Suggestions</ThemedText>
-                  {analysis.suggestions?.map((s, i) => (
-                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                  ))}
-                  
-                  <ThemedText type="label" style={styles.analysisTitle}>Next Steps</ThemedText>
-                  {analysis.next_steps?.map((s, i) => (
-                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                  ))}
-                  
-                  <ThemedText type="label" style={styles.analysisTitle}>Estimated Time</ThemedText>
-                  <ThemedText type="body" style={styles.analysisItem}>{analysis.estimated_time}</ThemedText>
-                  
-                  <ThemedText type="label" style={styles.analysisTitle}>Resources</ThemedText>
-                  {analysis.resources?.map((s, i) => (
-                    <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
-                  ))}
-                </ThemedView>
-              )}
-              
-              {error && (
-                <ThemedView variant="surface" style={styles.errorContainer}>
-                  <ThemedText type="body" style={[styles.errorText, { color: useThemeColor({}, 'error') }]}>
-                    {error}
+                {goal.description && (
+                  <ThemedText type="body" style={styles.goalDescription}>
+                    {goal.description}
                   </ThemedText>
-                </ThemedView>
-              )}
-            </ThemedView>
-
-            {chatHistory.length > 0 && (
-              <ThemedView variant="card" style={styles.chatSection}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>Chat History</ThemedText>
-                <View style={styles.chatList}>
-                  {chatHistory.map((turn, idx) => (
-                    <ThemedView 
-                      key={idx} 
-                      variant="surface" 
-                      style={[
-                        styles.chatMessage,
-                        turn.role === 'user' ? styles.userMessage : styles.aiMessage
-                      ]}
-                    >
-                      <ThemedText type="caption" style={styles.chatRole}>
-                        {turn.role === 'user' ? 'You' : 'AI Assistant'}
-                      </ThemedText>
-                      <ThemedText type="body" style={styles.chatText}>
-                        {turn.message}
-                      </ThemedText>
+                )}
+                <View style={[styles.statusBadge, { backgroundColor: 'rgba(37, 99, 235, 0.1)' }]}> 
+                  <ThemedText style={[styles.statusText, { color: accentColor }]}> 
+                    In Progress
+                  </ThemedText>
+                </View>
+              </ThemedView>
+              <ThemedView variant="card" style={styles.progressSection}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>Progress Notes</ThemedText>
+                {goal.progressNotes.length === 0 && (
+                  <ThemedView variant="surface" style={styles.emptyState}>
+                    <ThemedText type="body" style={styles.emptyText}>
+                      No progress notes yet. Add your first update below.
+                    </ThemedText>
+                  </ThemedView>
+                )}
+                <View style={styles.progressList}>
+                  {goal.progressNotes.map((note, idx) => (
+                    <ThemedView key={idx} variant="surface" style={styles.progressNoteItem}>
+                      <ThemedText type="body">{note}</ThemedText>
                     </ThemedView>
                   ))}
                 </View>
+                <View style={styles.addProgressSection}>
+                  <ThemedText type="label" style={styles.inputLabel}>Add Progress Update</ThemedText>
+                  <TextInput
+                    style={[styles.progressInput, { borderColor }]}
+                    placeholder="What did you accomplish today?"
+                    placeholderTextColor={secondaryColor}
+                    value={progressNote}
+                    onChangeText={setProgressNote}
+                    multiline
+                    numberOfLines={3}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.addProgressButton, 
+                      { 
+                        backgroundColor: progressNote.trim() ? accentColor : secondaryColor,
+                        opacity: progressNote.trim() ? 1 : 0.6
+                      }
+                    ]}
+                    onPress={handleAddProgress}
+                    disabled={saving || !progressNote.trim()}
+                    activeOpacity={0.8}
+                  >
+                    <ThemedText style={styles.addProgressButtonText}>
+                      {saving ? 'Adding...' : 'Add Progress'}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               </ThemedView>
-            )}
+              <ThemedView variant="card" style={styles.insightsSection}>
+                {!analysisLoading && (
+                  <TouchableOpacity
+                    style={[styles.analyzeButton, { backgroundColor: successColor }]}
+                    onPress={handleGetInsights}
+                    activeOpacity={0.8}
+                  >
+                    <ThemedText style={styles.analyzeButtonText}>Get AI Insights</ThemedText>
+                  </TouchableOpacity>
+                )}
+                {analysisLoading && (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={accentColor} />
+                    <ThemedText type="body" style={styles.loadingText}>Analyzing goal...</ThemedText>
+                  </View>
+                )}
+                {analysis && (
+                  <ThemedView variant="surface" style={styles.analysisBox}>
+                    <ThemedText type="label" style={styles.analysisTitle}>AI Suggestions</ThemedText>
+                    {analysis.suggestions?.map((s, i) => (
+                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
+                    ))}
+                    <ThemedText type="label" style={styles.analysisTitle}>Next Steps</ThemedText>
+                    {analysis.next_steps?.map((s, i) => (
+                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
+                    ))}
+                    <ThemedText type="label" style={styles.analysisTitle}>Estimated Time</ThemedText>
+                    <ThemedText type="body" style={styles.analysisItem}>{analysis.estimated_time}</ThemedText>
+                    <ThemedText type="label" style={styles.analysisTitle}>Resources</ThemedText>
+                    {analysis.resources?.map((s, i) => (
+                      <ThemedText key={i} type="body" style={styles.analysisItem}>• {s}</ThemedText>
+                    ))}
+                  </ThemedView>
+                )}
+                {error && (
+                  <AIUnavailableState
+                    title="AI analysis unavailable"
+                    description={error || "AI analysis failed. Please check your network or try again later."}
+                    icon="🤖"
+                  />
+                )}
+              </ThemedView>
+              {chatHistory.length > 0 && (
+                <ThemedView variant="card" style={styles.chatSection}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>Chat History</ThemedText>
+                  <View style={styles.chatList}>
+                    {chatHistory.map((turn, idx) => (
+                      <ThemedView 
+                        key={idx} 
+                        variant="surface" 
+                        style={[
+                          styles.chatMessage,
+                          turn.role === 'user' ? styles.userMessage : styles.aiMessage
+                        ]}
+                      >
+                        <ThemedText type="caption" style={styles.chatRole}>
+                          {turn.role === 'user' ? 'You' : 'AI Assistant'}
+                        </ThemedText>
+                        <ThemedText type="body" style={styles.chatText}>
+                          {turn.message}
+                        </ThemedText>
+                      </ThemedView>
+                    ))}
+                  </View>
+                </ThemedView>
+              )}
+            </>
           )
         ) : (
           <View style={styles.loadingContainer}>

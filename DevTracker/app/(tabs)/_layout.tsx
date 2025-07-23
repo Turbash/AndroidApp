@@ -4,6 +4,7 @@ import { useColorScheme } from '../../hooks/useColorScheme';
 import DashboardScreen from './index';
 import GoalsScreen from './goals';
 import ProfileScreen from './profile';
+import { ThemedText } from '../../components/ThemedText';
 
 const Tab = createBottomTabNavigator();
 

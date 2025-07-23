@@ -4,12 +4,15 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useThemeColor } from '../hooks/useThemeColor';
 
+import { AIUnavailableState } from './AIUnavailableState';
+
 interface RepoListProps {
   repos: any[];
   projectTypes: Record<string, string>;
   subtleTextColor: string;
   dateTextColor: string;
   loading: boolean;
+  error?: string | null;
   onRepoPress: (repoName: string) => void;
   renderExtraActions?: (repo: any) => React.ReactNode;
 }
@@ -20,6 +23,7 @@ export function RepoList({
   subtleTextColor,
   dateTextColor,
   loading,
+  error,
   onRepoPress,
   renderExtraActions,
 }: RepoListProps) {
@@ -30,6 +34,17 @@ export function RepoList({
       <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={accentColor} />
         <ThemedText type="body" style={styles.loadingText}>Loading repositories...</ThemedText>
+      </ThemedView>
+    );
+  }
+  if (error) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <AIUnavailableState
+          title="Repositories unavailable"
+          description={error}
+          icon="📁"
+        />
       </ThemedView>
     );
   }

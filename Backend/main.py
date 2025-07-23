@@ -157,7 +157,7 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
         profile_readme = data.profile_readme[:500] if data.profile_readme else "No profile README"
         repo_summaries = []
         for repo in data.repos[:5]:
-            section = f"\n--- Repo: {repo.name} ---"
+            section = f"\n===== BEGIN REPO: {repo.name} ====="
             section += f"\nStars: {repo.stars} | Forks: {repo.forks} | Topics: {', '.join(repo.topics)}"
             section += f"\nLanguages: {json.dumps(repo.languages)}"
             if repo.tree:
@@ -166,16 +166,17 @@ def analyze_developer_profile(data: DevAnalysisRequest) -> dict:
                 section += f"\n\n[README]\n{repo.readme[:300]}"
             if repo.code:
                 section += f"\n\n[CODE SAMPLE]\n{repo.code[:1000]}"
+            section += f"\n===== END REPO: {repo.name} ====="
             repo_summaries.append(section)
-        repos_str = "\n".join(repo_summaries)
+        repos_str = "\n\n".join(repo_summaries)
         prompt = f"""
 You are an advanced AI coding mentor. Analyze this developer's full GitHub profile and provide a comprehensive, actionable, and motivating assessment.
 
 Developer: {data.username}
 Profile Info: {profile_str}
 Profile README: {profile_readme}
----
-Sample of 5 Repositories (each section is clearly separated):
+----
+Sample of 5 Repositories (each section is clearly separated by '===== BEGIN REPO: <name> =====' and '===== END REPO: <name> ====='):
 {repos_str}
 
 Reply ONLY in this JSON format:

@@ -54,7 +54,6 @@ export function MLInsightsTab({
           <ThemedText type="body" style={styles.loadingSubtext}>
             Analyzing your GitHub data with AI
           </ThemedText>
-          {/* Button removed: now always auto-triggers, no manual retry button shown */}
         </ThemedView>
       )}
     </ThemedView>
@@ -66,7 +65,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  // refreshButtonsContainer removed
   fastRefreshButton: {
     flex: 1,
     paddingVertical: 8,

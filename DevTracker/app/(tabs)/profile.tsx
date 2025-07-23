@@ -6,18 +6,22 @@ import { GitHubStatsDisplay } from '../../components/GitHubStatsDisplay';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
+import { AIUnavailableState } from '../../components/AIUnavailableState';
 import { getCachedGitHubData, getGitHubUsername } from '../../utils/storage';
+import { getCachedUserProfile, fetchUserProfile } from '../../services/github';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../hooks/useColorScheme';
 
 export default function ProfileScreen() {
-  const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [githubUsername, setGithubUsername] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const accentColor = useThemeColor({}, 'tint');
   const successColor = useThemeColor({}, 'success');
+  const settingsButtonColor = useThemeColor({}, 'secondary');
   const colorScheme = useColorScheme();
 
   useEffect(() => {
@@ -26,13 +30,12 @@ export default function ProfileScreen() {
 
   const loadProfileData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const username = await getGitHubUsername();
       console.log('👤 Loading profile for username:', username);
       if (username) {
         setGithubUsername(username);
-        // Try to load from permanent cache first
-        const { getCachedUserProfile, fetchUserProfile } = await import('../../services/github');
         const cachedProfile = await getCachedUserProfile(username);
         if (cachedProfile) {
           console.log('⚡ Loaded user profile from permanent cache:', {
@@ -42,7 +45,6 @@ export default function ProfileScreen() {
           });
           setUserProfile(cachedProfile);
         } else {
-          // If not cached, fetch from API and cache it
           const userProfile = await fetchUserProfile(username, false);
           console.log('✅ Profile loaded from API and cached:', {
             name: userProfile.name,
@@ -51,9 +53,12 @@ export default function ProfileScreen() {
           });
           setUserProfile(userProfile);
         }
+      } else {
+        setGithubUsername('');
       }
-    } catch (error) {
-      console.error('Error loading profile:', error);
+    } catch (err) {
+      console.error('Error loading profile:', err);
+      setError('Failed to load GitHub profile. Please check your network or try again later.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +73,15 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.loadingContainer}>
-          <ThemedText type="body" style={styles.loadingText}>Loading profile...</ThemedText>
+          {error ? (
+            <AIUnavailableState
+              title="GitHub profile unavailable"
+              description={error}
+              icon="🐙"
+            />
+          ) : (
+            <ThemedText type="body" style={styles.loadingText}>Loading profile...</ThemedText>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -188,7 +201,7 @@ export default function ProfileScreen() {
         )}
         
         <TouchableOpacity
-          style={[styles.settingsButton, { backgroundColor: useThemeColor({}, 'secondary') }]}
+          style={[styles.settingsButton, { backgroundColor: settingsButtonColor }]}
           onPress={() => router.push('/settings')}
           activeOpacity={0.8}
         >
